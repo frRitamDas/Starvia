@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarClock, Target } from "lucide-react";
 
+import { PageHeader } from "@/components/app/page-header";
 import { ExamPrepGenerator } from "@/components/learn/exam-prep-generator";
 import { EmptyState } from "@/components/app/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -52,13 +53,12 @@ export default async function ExamPrepPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">Exam preparation</h1>
-        <p className="text-sm text-muted-foreground">
-          Tell Starvia your exam type and how many days you have — get a plan weighted toward what
-          actually carries marks.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Plan & revise"
+        icon={CalendarClock}
+        title="Exam preparation"
+        description="Tell Starvia your exam type and how many days you have — get a plan weighted toward what actually carries marks."
+      />
 
       <ExamPrepGenerator
         defaultClass={context.profile.class_level ?? "10"}

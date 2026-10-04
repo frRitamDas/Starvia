@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Check, Sparkles } from "lucide-react";
 
+import { Odometer } from "@/components/motion/odometer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -52,7 +53,7 @@ export function PricingSection({
             <Card
               key={plan.id}
               className={cn(
-                "relative flex flex-col p-6 transition-shadow",
+                "card-lift relative min-w-0 flex flex-col p-6 transition-shadow",
                 plan.id === "pro" && "border-primary/40 shadow-glow",
               )}
             >
@@ -70,10 +71,15 @@ export function PricingSection({
                 <p className="text-sm text-muted-foreground">{plan.tagline}</p>
               </div>
 
-              <div className="mt-5 flex items-end gap-1.5">
-                <span className="font-display text-4xl font-semibold tracking-tight">
-                  {isFree ? "Free" : formatPrice(price)}
-                </span>
+              <div className="mt-5 flex min-w-0 items-end gap-1.5">
+                {isFree ? (
+                  <span className="font-display text-4xl font-semibold tracking-tight">Free</span>
+                ) : (
+                  <Odometer
+                    value={price}
+                    className="font-display text-4xl font-semibold tracking-tight"
+                  />
+                )}
                 {!isFree && <span className="pb-1.5 text-sm text-muted-foreground">/month</span>}
               </div>
               {billing === "yearly" && !isFree ? (
@@ -122,46 +128,60 @@ export function PricingSection({
         })}
       </div>
 
-      {/* Limit comparison table */}
-      <div className="overflow-hidden rounded-2xl border border-border/70">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
-            <caption className="sr-only">Daily AI limits by plan</caption>
-            <thead className="bg-muted/40">
-              <tr>
-                <th scope="col" className="px-4 py-3 text-left font-semibold">
-                  Daily limits
+      {/* Desktop comparison table; phones use cards so the page never scrolls sideways. */}
+      <div className="hidden overflow-hidden rounded-2xl border border-border/70 sm:block">
+        <table className="w-full table-fixed text-sm">
+          <caption className="sr-only">Daily AI limits by plan</caption>
+          <thead className="bg-muted/40">
+            <tr>
+              <th scope="col" className="w-[40%] px-4 py-3 text-left font-semibold">
+                Daily limits
+              </th>
+              {PLAN_ORDER.map((planId) => (
+                <th key={planId} scope="col" className="px-4 py-3 text-left font-semibold">
+                  {PLANS[planId].name}
                 </th>
-                {PLAN_ORDER.map((planId) => (
-                  <th key={planId} scope="col" className="px-4 py-3 text-left font-semibold">
-                    {PLANS[planId].name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {AI_FEATURES.map((feature) => (
-                <tr key={feature} className="border-t border-border/60">
-                  <th scope="row" className="px-4 py-3 text-left font-normal text-muted-foreground">
-                    {FEATURE_LABELS[feature]}
-                  </th>
-                  {PLAN_ORDER.map((planId) => {
-                    const value = PLANS[planId].limits[feature];
-                    return (
-                      <td key={planId} className="px-4 py-3 font-medium">
-                        {value === 0 ? (
-                          <span className="text-muted-foreground">—</span>
-                        ) : (
-                          value
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {AI_FEATURES.map((feature) => (
+              <tr key={feature} className="border-t border-border/60">
+                <th scope="row" className="px-4 py-3 text-left font-normal text-muted-foreground">
+                  {FEATURE_LABELS[feature]}
+                </th>
+                {PLAN_ORDER.map((planId) => {
+                  const value = PLANS[planId].limits[feature];
+                  return (
+                    <td key={planId} className="px-4 py-3 font-medium">
+                      {value === 0 ? <span className="text-muted-foreground">—</span> : value}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="space-y-3 sm:hidden">
+        <p className="text-sm font-semibold">Daily AI limits</p>
+        {AI_FEATURES.map((feature) => (
+          <div key={feature} className="min-w-0 rounded-2xl border border-border/70 bg-card p-4">
+            <p className="text-[13px] font-medium">{FEATURE_LABELS[feature]}</p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {PLAN_ORDER.map((planId) => {
+                const value = PLANS[planId].limits[feature];
+                return (
+                  <div key={planId} className="min-w-0 rounded-xl bg-muted/55 px-2 py-2.5 text-center">
+                    <p className="truncate text-[10px] text-muted-foreground">{PLANS[planId].name}</p>
+                    <p className="mt-0.5 text-sm font-semibold">{value === 0 ? "—" : value}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

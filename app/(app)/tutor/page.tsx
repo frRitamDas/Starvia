@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Sparkles } from "lucide-react";
 
+import { PageHeader } from "@/components/app/page-header";
 import { TutorChat } from "@/components/learn/tutor-chat";
 import { getConversation, listConversations } from "@/lib/data/tutor";
 import { requireOnboarded } from "@/lib/session";
@@ -35,13 +37,12 @@ export default async function TutorPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">AI Tutor</h1>
-        <p className="text-sm text-muted-foreground">
-          Explanations matched to your class, board and syllabus. Ask follow-ups freely — Starvia
-          remembers the conversation.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Learn"
+        icon={Sparkles}
+        title="AI Tutor"
+        description="Explanations matched to your class, board and syllabus. Ask follow-ups freely — Starvia remembers the conversation."
+      />
 
       <TutorChat
         conversations={conversations}

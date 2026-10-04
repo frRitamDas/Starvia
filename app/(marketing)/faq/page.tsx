@@ -3,7 +3,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { CtaBand } from "@/components/marketing/cta-band";
-import { Section, SectionHeading } from "@/components/marketing/section";
+import { PageHero } from "@/components/marketing/page-hero";
+import { Section } from "@/components/marketing/section";
 import {
   Accordion,
   AccordionContent,
@@ -28,13 +29,11 @@ export default function FaqPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd()) }}
       />
 
-      <Section className="pb-8 pt-14 sm:pt-20">
-        <SectionHeading
-          eyebrow="Help centre"
-          title="Frequently asked questions"
-          description="Everything about classes, boards, AI behaviour, limits, payments and privacy."
-        />
-      </Section>
+      <PageHero
+        eyebrow="Help centre"
+        title={<>Frequently asked <span className="text-gradient-animated">questions</span></>}
+        description="Everything about classes, boards, AI behaviour, limits, payments and privacy."
+      />
 
       <Section className="space-y-10 py-0">
         {FAQ_CATEGORIES.map((category) => {

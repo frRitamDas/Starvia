@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { Section, SectionHeading } from "@/components/marketing/section";
+import { PageHero } from "@/components/marketing/page-hero";
+import { Section } from "@/components/marketing/section";
 import { Card } from "@/components/ui/card";
 import { siteConfig } from "@/lib/site";
 
@@ -99,15 +100,15 @@ const SECTIONS: { title: string; id?: string; body: string[]; list?: string[] }[
 
 export default function TermsPage() {
   return (
-    <Section className="pt-14 sm:pt-20">
-      <SectionHeading
+    <>
+      <PageHero
         align="left"
         eyebrow="Legal"
         title="Terms of Service"
         description={`Last updated ${LAST_UPDATED} · Please read these before using ${siteConfig.name}.`}
       />
-
-      <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_2fr]">
+      <Section className="pt-12 sm:pt-16">
+        <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
         <Card className="h-fit p-5 lg:sticky lg:top-24">
           <p className="text-sm font-medium">On this page</p>
           <ul className="mt-3 space-y-2 text-sm">
@@ -153,8 +154,9 @@ export default function TermsPage() {
             </a>
             .
           </p>
+          </div>
         </div>
-      </div>
-    </Section>
+      </Section>
+    </>
   );
 }

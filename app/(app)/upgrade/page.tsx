@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle2, HelpCircle } from "lucide-react";
 
+import { Odometer } from "@/components/motion/odometer";
 import { BillingPanel, PlanGrid } from "@/components/payments/upgrade-client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -72,8 +73,8 @@ export default async function UpgradePage() {
 
       <section className="space-y-4">
         <h2 className="font-display text-lg font-semibold">What you get each day</h2>
-        <div className="overflow-x-auto rounded-2xl border border-border/70">
-          <table className="w-full min-w-[560px] text-left text-[12.5px]">
+        <div className="hidden overflow-hidden rounded-2xl border border-border/70 sm:block">
+          <table className="w-full table-fixed text-left text-[12.5px]">
             <thead className="bg-muted/40">
               <tr>
                 <th className="px-4 py-3 font-medium">Feature</th>
@@ -130,14 +131,51 @@ export default async function UpgradePage() {
                 <td className="px-4 py-2.5">Price (yearly, per month)</td>
                 {PLAN_ORDER.map((planId) => (
                   <td key={planId} className="px-4 py-2.5">
-                    {PLANS[planId].priceInr === 0
-                      ? "Free"
-                      : `₹${PLANS[planId].yearlyPriceInr}/mo`}
+                    {PLANS[planId].priceInr === 0 ? (
+                      "Free"
+                    ) : (
+                      <span className="inline-flex items-baseline gap-0.5">
+                        <Odometer value={PLANS[planId].yearlyPriceInr ?? PLANS[planId].priceInr} />
+                        <span>/mo</span>
+                      </span>
+                    )}
                   </td>
                 ))}
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div className="space-y-3 sm:hidden">
+          {AI_FEATURES.map((feature) => (
+            <Card key={feature} className="min-w-0 p-4">
+              <p className="text-[12.5px] font-medium">{FEATURE_LABELS[feature]}</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {PLAN_ORDER.map((planId) => {
+                  const limit = PLANS[planId].limits[feature];
+                  return (
+                    <div key={planId} className="min-w-0 rounded-xl bg-muted/55 px-2 py-2 text-center">
+                      <p className="truncate text-[10px] text-muted-foreground">{PLANS[planId].name}</p>
+                      <p className="mt-0.5 text-xs font-semibold">{limit === 0 ? "—" : `${limit}/day`}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          ))}
+          {[{ label: "Advanced exam prep", key: "advancedExamPrep" as const }, { label: "Priority AI", key: "priorityAi" as const }].map((feature) => (
+            <Card key={feature.key} className="min-w-0 p-4">
+              <p className="text-[12.5px] font-medium">{feature.label}</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {PLAN_ORDER.map((planId) => (
+                  <div key={planId} className="min-w-0 rounded-xl bg-muted/55 px-2 py-2 text-center">
+                    <p className="truncate text-[10px] text-muted-foreground">{PLANS[planId].name}</p>
+                    <p className="mt-0.5 text-xs font-semibold">{PLANS[planId].capabilities[feature.key] ? "Included" : "—"}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
         </div>
       </section>
 

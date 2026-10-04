@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 
 import { CtaBand } from "@/components/marketing/cta-band";
+import { PageHero } from "@/components/marketing/page-hero";
 import { FEATURES } from "@/components/marketing/feature-grid";
 import { Eyebrow, Section, SectionHeading } from "@/components/marketing/section";
 import { Button } from "@/components/ui/button";
@@ -118,13 +119,11 @@ const DETAILS: Record<
 export default function FeaturesPage() {
   return (
     <>
-      <Section className="pb-8 pt-14 sm:pt-20">
-        <SectionHeading
-          eyebrow="Features"
-          title="Built around how students actually study"
-          description="Every Starvia tool shares one thing: your class, board and syllabus context. That's why the explanations feel written for you instead of copied from a textbook."
-        />
-      </Section>
+      <PageHero
+        eyebrow="Features"
+        title={<>Built around how students <span className="text-gradient-animated">actually study</span></>}
+        description="Every Starvia tool shares one thing: your class, board and syllabus context. That's why the explanations feel written for you instead of copied from a textbook."
+      />
 
       <Section className="py-0">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

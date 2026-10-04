@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { ScanLine } from "lucide-react";
 
+import { PageHeader } from "@/components/app/page-header";
 import { QuestionSolver } from "@/components/learn/question-solver";
 import { requireOnboarded } from "@/lib/session";
 import { getUsageSummary } from "@/lib/usage";
@@ -21,13 +23,12 @@ export default async function SolvePage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">Question solver</h1>
-        <p className="text-sm text-muted-foreground">
-          Stuck on a question? Type it or upload a photo — Starvia explains the concept, solves it step
-          by step, and gives you one to practise.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Solve"
+        icon={ScanLine}
+        title="Question solver"
+        description="Stuck on a question? Type it or upload a photo — Starvia explains the concept, solves it step by step, and gives you one to practise."
+      />
 
       <QuestionSolver
         subjects={subjects}

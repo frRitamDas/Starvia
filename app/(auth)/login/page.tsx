@@ -4,10 +4,11 @@ import { Sparkles } from "lucide-react";
 
 import { AuthDivider, AuthForm, AuthLink, GoogleButton } from "@/components/auth/auth-form";
 import { DemoNotice } from "@/components/auth/demo-notice";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { Card } from "@/components/ui/card";
 import { signInAction } from "@/app/(auth)/actions";
 import { getSessionContext } from "@/lib/session";
-import { demoMode, integrationStatus } from "@/lib/env";
+import { demoMode, integrationStatus, publicEnv } from "@/lib/env";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -28,6 +29,15 @@ export default async function LoginPage({
 
   const status = integrationStatus();
   const demo = demoMode();
+  const firebaseConfig = status.firebaseAuth
+    ? {
+        apiKey: publicEnv.firebaseApiKey,
+        authDomain: publicEnv.firebaseAuthDomain,
+        projectId: publicEnv.firebaseProjectId,
+        appId: publicEnv.firebaseAppId,
+        messagingSenderId: publicEnv.firebaseMessagingSenderId || undefined,
+      }
+    : null;
 
   return (
     <Card className="p-6 sm:p-8">
@@ -50,6 +60,34 @@ export default async function LoginPage({
       ) : null}
 
       <div className="mt-6">
+        {firebaseConfig ? (
+          <>
+            <GoogleAuthButton
+              config={firebaseConfig}
+              next={params.next && params.next.startsWith("/") ? params.next : "/dashboard"}
+            />
+            {status.googleOAuth ? (
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Pop-up not working?{" "}
+                <AuthLink href={`/api/auth/google?next=${encodeURIComponent(params.next ?? "/dashboard")}`}>
+                  Use redirect sign-in
+                </AuthLink>
+              </p>
+            ) : null}
+            <AuthDivider label="or sign in with email" />
+          </>
+        ) : status.googleOAuth ? (
+          <>
+            <GoogleButton next={params.next} />
+            <AuthDivider label="or sign in with email" />
+          </>
+        ) : demo ? (
+          <>
+            <GoogleAuthButton config={null} next="/dashboard" />
+            <AuthDivider label="or sign in with email" />
+          </>
+        ) : null}
+
         <AuthForm
           action={signInAction}
           hidden={params.next ? { next: params.next } : undefined}
@@ -83,13 +121,6 @@ export default async function LoginPage({
             </div>
           }
         />
-
-        {status.googleOAuth ? (
-          <>
-            <AuthDivider />
-            <GoogleButton next={params.next} />
-          </>
-        ) : null}
 
         {demo ? <DemoNotice /> : null}
       </div>

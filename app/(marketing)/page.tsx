@@ -11,9 +11,13 @@ import {
   ScanLine,
   Smartphone,
   Sparkles,
+  Target,
   Zap,
 } from "lucide-react";
 
+import { Aurora, Marquee } from "@/components/motion/aurora";
+import { CountUp } from "@/components/motion/count-up";
+import { Reveal } from "@/components/motion/reveal";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { PricingSection } from "@/components/marketing/pricing-section";
@@ -67,10 +71,11 @@ export default function LandingPage() {
       />
 
       {/* ---------------------------------------------------------------- Hero */}
-      <Section className="pb-6 pt-12 sm:pt-16 lg:pt-20" bleed>
+      <Section className="relative isolate overflow-hidden pb-10 pt-14 sm:pt-20 lg:pt-24" bleed>
+        <Aurora />
         <div className="container">
           <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
-            <div className="space-y-7">
+            <div className="animate-rise-in min-w-0 space-y-7">
               <div className="flex flex-wrap items-center gap-2">
                 <Eyebrow>
                   <Sparkles className="size-3.5" />
@@ -82,9 +87,10 @@ export default function LandingPage() {
               </div>
 
               <div className="space-y-5">
-                <h1 className="text-[34px] font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-[56px]">
+                <h1 className="text-[38px] font-semibold leading-[1.04] tracking-[-0.045em] sm:text-6xl lg:text-[64px]">
                   Everything you study,
-                  <br className="hidden sm:block" /> understood properly.
+                  <br className="hidden sm:block" />
+                  <span className="text-gradient-animated">understood properly.</span>
                 </h1>
                 <p className="max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-lg">
                   Starvia is your AI study companion for Classes 6–12 — learn concepts, solve doubts,
@@ -134,17 +140,64 @@ export default function LandingPage() {
       <Section className="py-8 sm:py-10">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { value: "7", label: "Classes covered (6–12)" },
-            { value: "3", label: "Boards supported at launch" },
-            { value: "6", label: "AI study tools in one workspace" },
-            { value: "₹0", label: "To get started today" },
-          ].map((stat) => (
-            <Card key={stat.label} className="p-5">
-              <p className="font-display text-3xl font-semibold tracking-tight text-gradient">
-                {stat.value}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
-            </Card>
+            { value: 7, label: "Classes covered (6–12)", suffix: "" },
+            { value: 3, label: "Boards supported at launch", suffix: "" },
+            { value: 8, label: "Study tools in one workspace", suffix: "" },
+            { value: 0, label: "To get started today", suffix: "", prefix: "₹" },
+          ].map((stat, index) => (
+            <Reveal key={stat.label} delay={index * 70}>
+              <Card className="card-lift min-w-0 p-5">
+                <p className="font-display text-3xl font-semibold tracking-tight text-gradient">
+                  <CountUp value={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
+
+      {/* --------------------------------------------------------- How it works */}
+      <Section className="border-y border-border/50 bg-muted/15">
+        <SectionHeading
+          eyebrow="From doubt to done"
+          title="Your next study session, in three moves"
+          description="Starvia keeps the setup light and the learning deep. Your profile quietly shapes every answer behind the scenes."
+        />
+        <div className="relative mt-10 grid gap-4 md:grid-cols-3">
+          <div className="absolute left-[16%] right-[16%] top-8 hidden h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent md:block" aria-hidden />
+          {[
+            {
+              icon: Target,
+              number: "01",
+              title: "Tell us where you are",
+              body: "Choose your class, board, subjects and goal once. Edit them any time.",
+            },
+            {
+              icon: Sparkles,
+              number: "02",
+              title: "Pick a study tool",
+              body: "Ask, learn, practise, solve or revise — every tool shares the same context.",
+            },
+            {
+              icon: BarChart3,
+              number: "03",
+              title: "See what changed",
+              body: "Scores, mastery, weak topics and streaks turn every session into a clear next step.",
+            },
+          ].map((step, index) => (
+            <Reveal key={step.number} delay={index * 100}>
+              <Card className="card-lift relative h-full min-w-0 p-6">
+                <div className="flex items-center justify-between">
+                  <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/15">
+                    <step.icon className="size-5" />
+                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">{step.number}</span>
+                </div>
+                <h3 className="mt-5 font-display text-base font-semibold">{step.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.body}</p>
+              </Card>
+            </Reveal>
           ))}
         </div>
       </Section>
@@ -153,12 +206,20 @@ export default function LandingPage() {
       <Section id="features" className="border-t border-border/60">
         <SectionHeading
           eyebrow="One workspace"
-          title="Six study tools that work together"
+          title="Eight study tools that work together"
           description="Ask, generate, practise, revise and track — without juggling five different apps or losing your progress."
         />
         <div className="mt-10">
           <FeatureGrid />
         </div>
+        <Marquee className="mt-12 border-y border-border/50 py-4">
+          {["CBSE", "ICSE / ISC", "State Boards", "Classes 6–12", "English · Hindi · Hinglish", "Maths rendered properly"].map((item) => (
+            <span key={item} className="flex items-center gap-5 px-5 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <Sparkles className="size-3 text-primary" />
+              {item}
+            </span>
+          ))}
+        </Marquee>
       </Section>
 
       {/* ----------------------------------------------------------- Tutorials */}
@@ -389,6 +450,72 @@ export default function LandingPage() {
               </ul>
             </Card>
           ))}
+        </div>
+      </Section>
+
+      {/* ---------------------------------------------------- Personalisation */}
+      <Section className="relative overflow-hidden border-t border-border/60 bg-muted/20">
+        <div className="grid min-w-0 items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <Reveal className="min-w-0 space-y-5">
+            <Eyebrow>
+              <Target className="size-3.5" />
+              Personal from minute one
+            </Eyebrow>
+            <h2 className="text-2xl font-semibold leading-tight sm:text-3xl lg:text-[34px]">
+              Set your learning profile once. Every tool gets smarter.
+            </h2>
+            <p className="text-[15px] leading-7 text-muted-foreground">
+              A three-step setup teaches Starvia your class, board, subjects and learning level — so
+              the answer to a Class 7 doubt never reads like a college lecture.
+            </p>
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
+              {["Clickable three-step setup", "Change your choices later from Profile", "Your data stays private to your account"].map((item) => (
+                <li key={item} className="flex items-center gap-2.5">
+                  <BadgeCheck className="size-4 shrink-0 text-success" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+
+          <Reveal delay={120} className="min-w-0">
+            <Card className="ring-gradient relative min-w-0 overflow-hidden border-0 bg-card/85 p-5 shadow-glow backdrop-blur sm:p-7">
+              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/10 to-transparent" aria-hidden />
+              <div className="relative flex items-center gap-2">
+                {["About you", "Your syllabus", "How you learn"].map((label, index) => (
+                  <div key={label} className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${index === 0 ? "bg-primary text-primary-foreground" : "border border-border bg-background text-muted-foreground"}`}>
+                        {index + 1}
+                      </span>
+                      <span className="hidden truncate text-[11px] font-medium sm:block">{label}</span>
+                    </div>
+                    {index < 2 ? <div className="ml-7 mt-[-14px] h-px translate-x-2 bg-border sm:hidden" /> : null}
+                  </div>
+                ))}
+              </div>
+              <div className="relative mt-7 space-y-4 rounded-2xl border border-border/70 bg-background/75 p-5">
+                <div>
+                  <p className="text-xs font-medium">Your name</p>
+                  <div className="mt-2 rounded-xl border border-primary/25 bg-card px-3.5 py-3 text-sm">Aarav Sharma</div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium">Class</p>
+                  <div className="mt-2 grid grid-cols-4 gap-2">
+                    {["9", "10", "11", "12"].map((value) => (
+                      <span key={value} className={`rounded-xl border px-2 py-2 text-center text-xs font-medium ${value === "10" ? "border-primary/40 bg-primary/10 text-primary" : "border-border/70 text-muted-foreground"}`}>
+                        {value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-muted-foreground">Takes about a minute</span>
+                  <span className="rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground">Continue →</span>
+                </div>
+              </div>
+            </Card>
+          </Reveal>
         </div>
       </Section>
 

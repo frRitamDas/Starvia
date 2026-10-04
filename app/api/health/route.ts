@@ -18,6 +18,8 @@ export async function GET() {
         integrations: status,
         warnings: [
           ...(status.supabase ? [] : ["Supabase is not configured — auth and data storage are disabled."]),
+          ...(status.serviceRole ? [] : ["SUPABASE_SERVICE_ROLE_KEY is missing — trusted writes and Firebase session bridging are disabled."]),
+          ...(status.firebaseAuth ? [] : ["Firebase web configuration is missing — primary Google sign-in is disabled."]),
           ...(status.gemini ? [] : ["GEMINI_API_KEY is missing — AI features will return NOT_CONFIGURED."]),
           ...(status.razorpay ? [] : ["Razorpay keys are missing — upgrades are disabled."]),
         ],

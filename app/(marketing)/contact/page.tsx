@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Clock, Instagram, Mail, MessageSquare } from "lucide-react";
 
 import { ContactForm } from "@/components/marketing/contact-form";
-import { Section, SectionHeading } from "@/components/marketing/section";
+import { PageHero } from "@/components/marketing/page-hero";
+import { Section } from "@/components/marketing/section";
 import { Card } from "@/components/ui/card";
 import { siteConfig } from "@/lib/site";
 
@@ -15,17 +16,21 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <Section className="pt-14 sm:pt-20">
-      <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
-        <div className="space-y-8">
-          <SectionHeading
-            align="left"
-            eyebrow="Contact"
-            title="We'd love to hear from you"
-            description="Whether something broke, a quiz answer looked wrong, or you want Starvia for your school — send us a message."
-          />
+    <>
+      <PageHero
+        eyebrow="Contact"
+        title={<>We'd love to <span className="text-gradient-animated">hear from you</span></>}
+        description="Whether something broke, a quiz answer looked wrong, or you want Starvia for your school — send us a message."
+      />
+      <Section className="pt-14 sm:pt-16">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
+          <div className="space-y-8">
+            <div>
+              <h2 className="font-display text-xl font-semibold">Choose the quickest route</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Support, corrections and school enquiries all reach the same small team.</p>
+            </div>
 
-          <div className="space-y-3">
+            <div className="space-y-3">
             <Card className="flex items-start gap-3.5 p-4">
               <Mail className="mt-0.5 size-4 text-primary" />
               <div>
@@ -81,7 +86,8 @@ export default function ContactPage() {
             <ContactForm />
           </div>
         </Card>
-      </div>
-    </Section>
+        </div>
+      </Section>
+    </>
   );
 }

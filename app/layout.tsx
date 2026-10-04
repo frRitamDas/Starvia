@@ -40,9 +40,19 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
   formatDetection: { telephone: false, address: false, email: false },
+  manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icon.svg" }],
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: siteConfig.name,
   },
 };
 

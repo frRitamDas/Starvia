@@ -26,6 +26,11 @@ export const publicEnv = {
   supabaseAnonKey: read("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   siteUrl: read("NEXT_PUBLIC_SITE_URL", "http://localhost:3000").replace(/\/$/, ""),
   razorpayKeyId: read("NEXT_PUBLIC_RAZORPAY_KEY_ID"),
+  firebaseApiKey: read("NEXT_PUBLIC_FIREBASE_API_KEY"),
+  firebaseAuthDomain: read("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
+  firebaseProjectId: read("NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
+  firebaseAppId: read("NEXT_PUBLIC_FIREBASE_APP_ID"),
+  firebaseMessagingSenderId: read("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
   /** Explicit opt-in only. Never turns on by itself in production. */
   demoMode: bool("NEXT_PUBLIC_DEMO_MODE"),
   appVersion: read("NEXT_PUBLIC_APP_VERSION", "1.0.0"),
@@ -99,6 +104,14 @@ export const supabaseConfigured = () =>
 
 export const geminiConfigured = () => Boolean(serverEnv.geminiApiKey);
 
+export const firebaseConfigured = () =>
+  Boolean(
+    publicEnv.firebaseApiKey &&
+      publicEnv.firebaseAuthDomain &&
+      publicEnv.firebaseProjectId &&
+      publicEnv.firebaseAppId,
+  );
+
 export const razorpayConfigured = () =>
   Boolean(serverEnv.razorpayKeyId && serverEnv.razorpayKeySecret);
 
@@ -120,6 +133,7 @@ export function integrationStatus() {
     razorpay: razorpayConfigured(),
     razorpayWebhook: Boolean(serverEnv.razorpayWebhookSecret),
     serviceRole: Boolean(serverEnv.supabaseServiceRoleKey),
+    firebaseAuth: firebaseConfigured(),
     googleOAuth: read("NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED").toLowerCase() === "true",
     demo: demoMode(),
     mockCheckout: serverEnv.allowMockCheckout,
