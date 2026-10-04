@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { CtaBand } from "@/components/marketing/cta-band";
+import { PageHero } from "@/components/marketing/page-hero";
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { Section, SectionHeading } from "@/components/marketing/section";
 import {
@@ -29,13 +30,11 @@ export default async function PricingPage() {
 
   return (
     <>
-      <Section className="pb-8 pt-14 sm:pt-20">
-        <SectionHeading
-          eyebrow="Pricing"
-          title="Simple plans, honest limits"
-          description="Every plan includes the full workspace. Paid plans raise your daily AI limits and unlock advanced exam preparation, flashcards and analytics."
-        />
-      </Section>
+      <PageHero
+        eyebrow="Pricing"
+        title={<>Simple plans, <span className="text-gradient-animated">honest limits</span></>}
+        description="Every plan includes the full workspace. Paid plans raise your daily AI limits and unlock advanced exam preparation, flashcards and analytics."
+      />
 
       <Section className="py-0">
         <PricingSection

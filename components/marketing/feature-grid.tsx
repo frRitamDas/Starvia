@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { Reveal } from "@/components/motion/reveal";
 import { Card } from "@/components/ui/card";
 
 export interface Feature {
@@ -83,17 +84,16 @@ export function FeatureGrid({ limit }: { limit?: number }) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {features.map((feature) => (
-        <Card
-          key={feature.title}
-          className="group h-full p-5 transition-colors hover:border-primary/35"
-        >
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-            <feature.icon className="size-5" />
-          </div>
-          <h3 className="mt-4 font-display text-[15px] font-semibold">{feature.title}</h3>
-          <p className="mt-2 text-[13.5px] leading-6 text-muted-foreground">{feature.description}</p>
-        </Card>
+      {features.map((feature, index) => (
+        <Reveal key={feature.title} delay={(index % 4) * 70} className="h-full min-w-0">
+          <Card className="card-lift group h-full min-w-0 p-5 transition-colors hover:border-primary/35">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              <feature.icon className="size-5" />
+            </div>
+            <h3 className="mt-4 font-display text-[15px] font-semibold">{feature.title}</h3>
+            <p className="mt-2 text-[13.5px] leading-6 text-muted-foreground">{feature.description}</p>
+          </Card>
+        </Reveal>
       ))}
     </div>
   );

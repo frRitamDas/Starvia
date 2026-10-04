@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Award, BarChart3, BookOpenCheck, Clock, Flame, Target, TrendingUp, Zap } from "lucide-react";
 
 import { EmptyState } from "@/components/app/empty-state";
+import { PageHeader } from "@/components/app/page-header";
 import { BarChart, ProgressRing, Sparkline } from "@/components/learn/stat-charts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,12 +68,12 @@ export default async function ProgressPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">Your progress</h1>
-        <p className="text-sm text-muted-foreground">
-          Everything here is private to your account. Streaks and study time are measured in IST.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Insights"
+        icon={BarChart3}
+        title="Your progress"
+        description="Everything here is private to your account. Streaks and study time are measured in IST."
+      />
 
       {/* Top stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

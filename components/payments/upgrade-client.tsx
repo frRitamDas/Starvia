@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Odometer } from "@/components/motion/odometer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,7 +138,7 @@ export function PlanGrid({
       toast.error(
         error instanceof ApiClientError
           ? error.message
-          : "Payment could not be completed. Please try again.",
+          : "Payment could not be completed.",
       );
     } finally {
       setBusy(null);
@@ -211,7 +212,7 @@ export function PlanGrid({
       toast.error(
         error instanceof ApiClientError
           ? error.message
-          : "Payment could not be completed. Please try again.",
+          : "Payment could not be completed.",
       );
       setBusy(null);
     }
@@ -249,7 +250,7 @@ export function PlanGrid({
             <Card
               key={planId}
               className={cn(
-                "relative flex flex-col",
+                "card-lift relative min-w-0 flex flex-col",
                 plan.marketing.badge && "border-primary/35 shadow-glow",
               )}
             >
@@ -265,12 +266,16 @@ export function PlanGrid({
                   {active ? <Badge variant="success">Current plan</Badge> : null}
                 </CardTitle>
                 <p className="text-[12.5px] text-muted-foreground">{plan.tagline}</p>
-                <p className="pt-1 font-display text-2xl font-semibold">
-                  {plan.priceInr === 0 ? "Free" : formatPrice(monthlyPrice ?? plan.priceInr)}
+                <div className="flex items-baseline gap-1 pt-1 font-display text-2xl font-semibold">
+                  {plan.priceInr === 0 ? (
+                    "Free"
+                  ) : (
+                    <Odometer value={monthlyPrice ?? plan.priceInr} />
+                  )}
                   {plan.priceInr > 0 ? (
                     <span className="text-[12.5px] font-normal text-muted-foreground">/month</span>
                   ) : null}
-                </p>
+                </div>
                 {plan.priceInr > 0 && billing === "yearly" ? (
                   <p className="text-[11.5px] text-muted-foreground">
                     Billed yearly as {formatPrice((monthlyPrice ?? plan.priceInr) * 12)}

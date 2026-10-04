@@ -304,7 +304,7 @@ export function TutorChat({
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
+    <div className="grid min-w-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
       {/* Conversation list (desktop) */}
       <div className="hidden lg:block">
         <Card className="flex h-[calc(100dvh-13rem)] flex-col p-3">
@@ -353,7 +353,7 @@ export function TutorChat({
       </div>
 
       {/* Chat */}
-      <Card className="flex h-[calc(100dvh-11rem)] flex-col overflow-hidden lg:h-[calc(100dvh-13rem)]">
+      <Card className="flex min-w-0 h-[calc(100dvh-11rem)] flex-col overflow-hidden lg:h-[calc(100dvh-13rem)]">
         {demo ? (
           <p className="border-b border-warning/30 bg-warning/[0.08] px-4 py-2 text-[11.5px] text-muted-foreground">
             Demo mode — replies are placeholders until a Gemini API key is configured. History, quotas

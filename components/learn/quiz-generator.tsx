@@ -106,9 +106,9 @@ export function QuizGenerator({
   }
 
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-base">
+        <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
           <span className="flex items-center gap-2">
             <ClipboardList className="size-4 text-primary" />
             Generate a quiz

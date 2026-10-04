@@ -93,10 +93,12 @@
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
+    overflow-x: clip;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-x: clip;
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -252,4 +254,176 @@
       scroll-behavior: auto !important;
     }
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Starvia motion + premium surface layer (CSS only, no animation dependency) */
+/* -------------------------------------------------------------------------- */
+
+@layer components {
+  .card-lift {
+    transition:
+      transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 300ms ease,
+      box-shadow 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card-lift:hover {
+    transform: translateY(-4px);
+    border-color: hsl(var(--primary) / 0.34);
+    box-shadow:
+      0 1px 2px hsl(224 40% 12% / 0.04),
+      0 22px 52px -28px hsl(var(--primary) / 0.42);
+  }
+
+  .ring-gradient {
+    position: relative;
+    isolation: isolate;
+  }
+  .ring-gradient::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.6), transparent 42%, #38bdf880);
+  }
+
+  .reveal {
+    opacity: 1;
+  }
+  @media (scripting: enabled) {
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px) scale(0.992);
+      transition:
+        opacity 720ms cubic-bezier(0.16, 1, 0.3, 1),
+        transform 720ms cubic-bezier(0.16, 1, 0.3, 1);
+      transition-delay: var(--reveal-delay, 0ms);
+      will-change: opacity, transform;
+    }
+    .reveal.reveal-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .page-enter {
+    animation: page-rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .odometer-window {
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+    line-height: 1;
+    vertical-align: -0.07em;
+  }
+  .odometer-ribbon {
+    display: flex;
+    height: 10em;
+    flex-direction: column;
+    transition: transform 720ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  .odometer-digit {
+    display: block;
+    height: 1em;
+    line-height: 1;
+  }
+
+  .aurora-field {
+    background:
+      radial-gradient(circle at 50% -15%, hsl(var(--primary) / 0.14), transparent 46%),
+      linear-gradient(to bottom, hsl(var(--background)), hsl(var(--background) / 0.75));
+  }
+  .aurora-orb {
+    position: absolute;
+    display: block;
+    aspect-ratio: 1;
+    border-radius: 999px;
+    filter: blur(70px);
+    opacity: 0.3;
+    animation: aurora-drift 16s ease-in-out infinite alternate;
+  }
+  .aurora-orb-one {
+    left: -12%;
+    top: 3%;
+    width: min(48rem, 70vw);
+    background: #6366f1;
+  }
+  .aurora-orb-two {
+    right: -12%;
+    top: 8%;
+    width: min(42rem, 62vw);
+    background: #0ea5e9;
+    animation-delay: -6s;
+  }
+  .aurora-orb-three {
+    bottom: -16%;
+    left: 32%;
+    width: min(32rem, 50vw);
+    background: #a855f7;
+    animation-delay: -11s;
+  }
+
+  .marquee-mask {
+    mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  }
+  .marquee-track {
+    animation: marquee-scroll 28s linear infinite;
+  }
+  .marquee-track:hover {
+    animation-play-state: paused;
+  }
+  .marquee-reverse {
+    animation-direction: reverse;
+  }
+
+  .text-gradient-animated {
+    color: transparent;
+    background-image: linear-gradient(100deg, #4f46e5, #8b5cf6, #0284c7, #4f46e5);
+    background-size: 250% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    animation: gradient-shift 8s ease-in-out infinite;
+  }
+
+  .noise-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+    mix-blend-mode: soft-light;
+  }
+}
+
+@layer utilities {
+  .animate-rise-in {
+    animation: page-rise 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-fade-up {
+    animation: fade-soft 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes page-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-soft {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes aurora-drift {
+  0% { transform: translate3d(-2%, -2%, 0) scale(0.94); }
+  50% { transform: translate3d(8%, 6%, 0) scale(1.05); }
+  100% { transform: translate3d(-4%, 11%, 0) scale(0.98); }
+}
+
+@keyframes marquee-scroll {
+  to { transform: translateX(-50%); }
 }

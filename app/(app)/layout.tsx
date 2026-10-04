@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { Flame, Sparkles, Zap } from "lucide-react";
 
 import { AppSidebar, MobileBottomNav, MobileTopBar } from "@/components/app/app-nav";
+import { CommandPalette } from "@/components/app/command-palette";
+import { PageShell } from "@/components/app/page-shell";
 import { UserMenu } from "@/components/app/user-menu";
 import { DemoBanner } from "@/components/app/demo-banner";
 import { Badge } from "@/components/ui/badge";
@@ -80,10 +82,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div className="flex min-h-dvh bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
       <AppSidebar footer={sidebarFooter} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <MobileTopBar
           actions={
             <UserMenu
@@ -108,14 +110,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           />
         </div>
 
-        <main id="main" className="flex-1 px-4 pb-24 pt-5 sm:px-6 lg:pb-10 lg:pt-6">
-          <div className="mx-auto w-full max-w-6xl space-y-6">
+        <main id="main" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-5 sm:px-6 lg:pb-10 lg:pt-6">
+          <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6">
             {isDemo ? <DemoBanner /> : null}
-            {children}
+            <PageShell>{children}</PageShell>
           </div>
         </main>
       </div>
 
+      <CommandPalette />
       <MobileBottomNav />
     </div>
   );

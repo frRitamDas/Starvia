@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Award, Flame, Sparkles, Zap } from "lucide-react";
+import { Award, Flame, Sparkles, UserRound, Zap } from "lucide-react";
 
+import { PageHeader } from "@/components/app/page-header";
 import { AvatarUploader, SettingsCard, SignOutButton } from "@/components/learn/account-panels";
 import { ProfileForm } from "@/components/learn/profile-form";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +29,12 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">Your profile</h1>
-        <p className="text-sm text-muted-foreground">
-          Keep these details current — they decide how Starvia explains things to you.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Account"
+        icon={UserRound}
+        title="Your profile"
+        description="Keep these details current — they decide how Starvia explains things to you."
+      />
 
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-5">
@@ -52,9 +53,9 @@ export default async function ProfilePage() {
             initial={{
               full_name: profile.full_name ?? "",
               class_level: profile.class_level ?? "10",
-              board: profile.board ?? "cbse",
+              board: profile.board ?? "CBSE",
               subjects: profile.subjects ?? [],
-              learning_level: profile.learning_level ?? "average",
+              learning_level: profile.learning_level ?? "developing",
               exam_target: profile.exam_target ?? "",
             }}
           />

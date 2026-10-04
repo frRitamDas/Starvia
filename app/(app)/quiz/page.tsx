@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ClipboardList, TrendingUp } from "lucide-react";
 
+import { PageHeader } from "@/components/app/page-header";
 import { QuizGenerator } from "@/components/learn/quiz-generator";
 import { EmptyState } from "@/components/app/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -44,12 +45,12 @@ export default async function QuizPage({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">AI Quizzes</h1>
-        <p className="text-sm text-muted-foreground">
-          Practise any chapter with exam-style questions, then see exactly what to fix.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Practise"
+        icon={ClipboardList}
+        title="AI Quizzes"
+        description="Practise any chapter with exam-style questions, then see exactly what to fix. Answers stay on the server until you submit."
+      />
 
       <QuizGenerator
         defaultClass={context.profile.class_level ?? "10"}

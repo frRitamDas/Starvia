@@ -4,11 +4,12 @@ import { GraduationCap, Sparkles, Zap } from "lucide-react";
 
 import { AuthDivider, AuthForm, AuthLink, GoogleButton } from "@/components/auth/auth-form";
 import { DemoNotice } from "@/components/auth/demo-notice";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { signUpAction } from "@/app/(auth)/actions";
 import { getSessionContext } from "@/lib/session";
-import { demoMode, integrationStatus } from "@/lib/env";
+import { demoMode, integrationStatus, publicEnv } from "@/lib/env";
 
 export const metadata: Metadata = {
   title: "Create your free account",
@@ -36,6 +37,15 @@ export default async function SignupPage({
 
   const status = integrationStatus();
   const demo = demoMode();
+  const firebaseConfig = status.firebaseAuth
+    ? {
+        apiKey: publicEnv.firebaseApiKey,
+        authDomain: publicEnv.firebaseAuthDomain,
+        projectId: publicEnv.firebaseProjectId,
+        appId: publicEnv.firebaseAppId,
+        messagingSenderId: publicEnv.firebaseMessagingSenderId || undefined,
+      }
+    : null;
 
   return (
     <Card className="p-6 sm:p-8">
@@ -63,6 +73,35 @@ export default async function SignupPage({
       </Badge>
 
       <div className="mt-5">
+        {firebaseConfig ? (
+          <>
+            <GoogleAuthButton
+              config={firebaseConfig}
+              next={params.next && params.next.startsWith("/") ? params.next : "/onboarding"}
+              label="Sign up with Google"
+            />
+            {status.googleOAuth ? (
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Pop-up not working?{" "}
+                <AuthLink href={`/api/auth/google?next=${encodeURIComponent(params.next ?? "/onboarding")}`}>
+                  Use redirect sign-in
+                </AuthLink>
+              </p>
+            ) : null}
+            <AuthDivider label="or create an email account" />
+          </>
+        ) : status.googleOAuth ? (
+          <>
+            <GoogleButton next={params.next ?? "/onboarding"} />
+            <AuthDivider label="or create an email account" />
+          </>
+        ) : demo ? (
+          <>
+            <GoogleAuthButton config={null} next="/onboarding" label="Sign up with Google" />
+            <AuthDivider label="or create an email account" />
+          </>
+        ) : null}
+
         <AuthForm
           action={signUpAction}
           hidden={{ next: params.next ?? "/onboarding" }}
@@ -100,13 +139,6 @@ export default async function SignupPage({
             </p>
           }
         />
-
-        {status.googleOAuth ? (
-          <>
-            <AuthDivider label="or sign up with" />
-            <GoogleButton next={params.next} />
-          </>
-        ) : null}
 
         {demo ? <DemoNotice /> : null}
       </div>

@@ -77,6 +77,12 @@ export function ProfileForm({
     return true;
   }
 
+  function goToStep(target: number) {
+    if (target > 0 && !validateStep(0)) return;
+    if (target > 1 && !validateStep(1)) return;
+    setStep(target);
+  }
+
   async function submit() {
     if (!validateStep(0) || !validateStep(1)) {
       setStep(values.full_name.trim().length < 2 ? 0 : 1);
@@ -122,20 +128,46 @@ export function ProfileForm({
 
   return (
     <div className="space-y-5">
-      {onboarding ? (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-[12.5px]">
-            <span className="font-medium">
-              Step {step + 1} of {steps.length} · {steps[step]!.title}
-            </span>
-            <span className="text-muted-foreground">{steps[step]!.description}</span>
-          </div>
-          <Progress value={((step + 1) / steps.length) * 100} className="h-1.5" />
+      <div className="space-y-3">
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="font-medium">{onboarding ? `Step ${step + 1} of ${steps.length}` : "Profile section"}</span>
+          <span className="truncate pl-3 text-muted-foreground">{steps[step]!.description}</span>
         </div>
-      ) : null}
+        <div className="relative grid grid-cols-3 gap-2" aria-label="Profile setup steps">
+          <div className="absolute left-[16%] right-[16%] top-4 h-px bg-border" aria-hidden />
+          {steps.map((item, index) => {
+            const active = step === index;
+            const complete = step > index;
+            return (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() => goToStep(index)}
+                className="relative z-10 flex min-w-0 flex-col items-center gap-1.5 text-center"
+                aria-current={active ? "step" : undefined}
+              >
+                <span
+                  className={cn(
+                    "flex size-8 items-center justify-center rounded-full border bg-background text-xs font-semibold transition-all",
+                    active && "border-primary bg-primary text-primary-foreground shadow-glow",
+                    complete && "border-success bg-success text-success-foreground",
+                    !active && !complete && "border-border text-muted-foreground",
+                  )}
+                >
+                  {complete ? <Check className="size-3.5" /> : index + 1}
+                </span>
+                <span className={cn("max-w-full truncate text-[10.5px] font-medium", active ? "text-foreground" : "text-muted-foreground")}>
+                  {item.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <Progress value={((step + 1) / steps.length) * 100} className="h-1" />
+      </div>
 
-      <Card>
-        <CardContent className="space-y-5 p-5 sm:p-6">
+      <Card className="ring-gradient min-w-0 border-0 bg-card/90 shadow-soft">
+        <CardContent className="min-w-0 space-y-5 p-5 sm:p-6">
           {step === 0 ? (
             <div className="space-y-4">
               <div className="space-y-1.5">

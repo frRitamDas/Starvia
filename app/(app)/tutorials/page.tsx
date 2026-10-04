@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpenCheck, Clock, Sparkles } from "lucide-react";
 
+import { PageHeader } from "@/components/app/page-header";
 import { TutorialGenerator } from "@/components/learn/tutorial-generator";
 import { EmptyState } from "@/components/app/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -44,13 +45,12 @@ export default async function TutorialsPage({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">AI Tutorials</h1>
-        <p className="text-sm text-muted-foreground">
-          A complete, exam-focused explanation of any topic — objectives, worked examples, common
-          mistakes and practice questions.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Learn deeply"
+        icon={BookOpenCheck}
+        title="AI Tutorials"
+        description="A complete, exam-focused explanation of any topic — objectives, worked examples, common mistakes and practice questions."
+      />
 
       <TutorialGenerator
         defaultClass={context.profile.class_level ?? "10"}

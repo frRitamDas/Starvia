@@ -3,7 +3,8 @@ import Link from "next/link";
 import { ArrowRight, GraduationCap, Instagram, Mail, Target, Users } from "lucide-react";
 
 import { CtaBand } from "@/components/marketing/cta-band";
-import { Eyebrow, Section, SectionHeading } from "@/components/marketing/section";
+import { PageHero } from "@/components/marketing/page-hero";
+import { Section, SectionHeading } from "@/components/marketing/section";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { siteConfig } from "@/lib/site";
@@ -36,13 +37,14 @@ const VALUES = [
 export default function AboutPage() {
   return (
     <>
-      <Section className="pb-8 pt-14 sm:pt-20">
+      <PageHero
+        eyebrow="About us"
+        title={<>Built because studying alone can feel <span className="text-gradient-animated">impossibly hard</span></>}
+        description="Starvia gives Indian school students a patient, syllabus-aware study companion whenever a teacher or friend isn't around."
+      />
+      <Section className="pt-14 sm:pt-16">
         <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
           <div className="space-y-6">
-            <Eyebrow>About us</Eyebrow>
-            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl lg:text-[44px]">
-              We built Starvia because studying alone is hard
-            </h1>
             <div className="space-y-4 text-[15px] leading-relaxed text-muted-foreground">
               <p>
                 Every student has had the same experience: you&apos;re halfway through a numerical,

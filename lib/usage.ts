@@ -248,29 +248,8 @@ export function assertFeatureIncluded(context: SessionContext, feature: AiFeatur
   }
 }
 
-function limitMessage(feature: AiFeature) {
-  return `${limitNoun(feature)} for today are done. Upgrade for a higher limit, or come back after midnight.`;
-}
-
-function limitNoun(feature: AiFeature) {
-  switch (feature) {
-    case "tutor":
-      return "Your AI tutor messages";
-    case "tutorial":
-      return "Your AI tutorials";
-    case "quiz":
-      return "Your AI quizzes";
-    case "image":
-      return "Your image questions";
-    case "solver":
-      return "Your solved questions";
-    case "flashcards":
-      return "Your flashcard generations";
-    case "exam_prep":
-      return "Your exam prep plans";
-    default:
-      return "Your daily AI requests";
-  }
+function limitMessage(_feature: AiFeature) {
+  return "You've reached today's AI limit. Upgrade to continue learning.";
 }
 
 /** Append an AI event for admin analytics (requests, latency, error rate). */

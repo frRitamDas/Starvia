@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Layers } from "lucide-react";
 
+import { PageHeader } from "@/components/app/page-header";
 import { FlashcardManager } from "@/components/learn/flashcard-manager";
 import { flashcardStats, listDecks } from "@/lib/data/flashcards";
 import { requireOnboarded } from "@/lib/session";
@@ -27,12 +29,12 @@ export default async function FlashcardsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">Flashcards</h1>
-        <p className="text-sm text-muted-foreground">
-          Five minutes of recall beats an hour of re-reading. Generate a deck or build your own.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Recall"
+        icon={Layers}
+        title="Flashcards"
+        description="Five minutes of recall beats an hour of re-reading. Generate a deck or build your own."
+      />
 
       <FlashcardManager
         decks={decks}

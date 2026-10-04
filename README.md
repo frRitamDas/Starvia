@@ -34,12 +34,14 @@ per day) · **Pro** ₹99/month · **Ultra** ₹249/month. Yearly billing is ava
 
 - **Next.js 15 (App Router)** with React Server Components, streaming and route handlers
 - **TypeScript** (strict), **Tailwind CSS** with a custom design system, shadcn/ui-style Radix primitives
-- **Supabase** — Auth (email/password + optional Google), Postgres with row-level security, Storage for avatars
+- **Firebase Authentication** — primary Google popup sign-in in the browser; ID tokens are verified server-side with Node crypto (no `firebase-admin`)
+- **Supabase** — SSR sessions, email/password + OAuth fallback, Postgres with row-level security, Storage for avatars
 - **Google Gemini** — server-side only, with model switchability, caching and structured JSON responses
 - **Razorpay** — server-side signature verification, webhooks and subscription support
 
-No payment or AI SDKs are bundled: both providers are called over their REST APIs server-side, so the
-dependency list stays small and updates are easy.
+No payment, AI, or Firebase Admin SDK is bundled. Gemini and Razorpay use small server-side REST clients;
+Firebase's minimal app/auth browser modules load only on the auth surface, and the server verifies Google signatures
+against the official rotating x509 certificates.
 
 ## Quick start
 
@@ -60,6 +62,8 @@ npm run typecheck   # tsc --noEmit
 npm run lint        # ESLint
 npm run build       # production build
 npm run check       # typecheck + lint
+npm run db:push     # apply sql/schema.sql using SUPABASE_DB_URL
+npm run icons       # regenerate PWA icons from the original Starvia mark
 ```
 
 ## Setting up the backend
@@ -67,27 +71,43 @@ npm run check       # typecheck + lint
 ### 1. Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor** and run [`sql/schema.sql`](sql/schema.sql). It creates every table
-   (profiles, subscriptions, payments, ai_usage, conversations, messages, tutorials, quizzes,
-   quiz_attempts, flashcards, study_progress, exam_plans, achievements, feedback, …), the
-   row-level-security policies, the `handle_new_user()` trigger and the `consume_ai_quota()` function
-   used for atomic daily limits.
+2. Apply [`sql/schema.sql`](sql/schema.sql). Either paste it into **SQL Editor**, or copy the database
+   connection string and run `SUPABASE_DB_URL='postgresql://…' npm run db:push`. The idempotent schema creates
+   every table, RLS policy, the `handle_new_user()` trigger, and the atomic `consume_ai_quota()` function.
 3. Copy **Project URL**, **anon key** and **service_role key** into `.env.local`
-   (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
-4. Storage: create a private/public bucket named `avatars` for profile photos.
-5. Optional Google sign-in: Authentication → Providers → Google, then set
-   `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true`.
-6. Add `http://localhost:3000/auth/callback` and `https://your-domain/auth/callback` to the
-   redirect allow-list.
+   (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). The
+   service-role key stays server-only and is required for usage counters, payments, admin analytics,
+   and the verified Firebase-to-Supabase session bridge.
+4. Storage: create an `avatars` bucket for profile photos and apply the project storage policies.
+5. Add `http://localhost:3000/auth/callback` and `https://your-domain/auth/callback` under
+   **Authentication → URL Configuration → Redirect URLs**.
+6. Optional redirect fallback: enable Google under **Authentication → Providers** and set
+   `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true`. Firebase remains the primary Google sign-in path.
 
-### 2. Gemini
+### 2. Firebase Google sign-in
+
+1. Create or open a Firebase project, then add a **Web app** under **Project settings → General**.
+2. Open **Build → Authentication → Sign-in method**, enable **Google**, and select a support email.
+3. Copy the public web configuration into `NEXT_PUBLIC_FIREBASE_API_KEY`,
+   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`,
+   `NEXT_PUBLIC_FIREBASE_APP_ID`, and `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`.
+4. Under **Authentication → Settings → Authorized domains**, add `localhost`, your production Vercel
+   domain, and any stable preview/custom domain used for sign-in.
+5. Keep `SUPABASE_SERVICE_ROLE_KEY` configured. After Firebase verifies Google in the popup, Starvia
+   posts only the Firebase ID token to `/api/auth/google`; the server verifies its RS256 signature,
+   `kid`, audience, issuer, expiry and `email_verified`, then issues a normal Supabase SSR session.
+
+Do **not** install or configure `firebase-admin`; the verifier in `lib/firebase/verify.ts` deliberately
+uses `node:crypto` and Google's rotating x509 certificates.
+
+### 3. Gemini
 
 Create an API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and set
 `GEMINI_API_KEY`. Model names are configurable (`GEMINI_MODEL_DEFAULT`, `_FAST`, `_VISION`, `_PRO`),
 so you can change models without touching code. All calls happen in server code — the key never
 reaches the browser.
 
-### 3. Razorpay
+### 4. Razorpay
 
 1. Add `RAZORPAY_KEY_ID`, `NEXT_PUBLIC_RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`.
 2. Webhooks → add `https://your-domain/api/webhooks/razorpay`, subscribe to `payment.captured`,
@@ -103,11 +123,23 @@ disabled in production).
 
 ## Deploying to Vercel
 
-1. Push this repository to GitHub.
-2. On Vercel: **Add New → Project → Import** the repository (framework auto-detects Next.js).
-3. Paste every key from `.env.example` into **Project → Settings → Environment Variables**
-   (set `NEXT_PUBLIC_SITE_URL` to your production URL and add your email to `ADMIN_EMAILS`).
-4. Deploy, then open `/api/health` to confirm each integration reports `true`.
+1. Push this repository to GitHub and import it from **Vercel → Add New → Project**. Next.js is
+   detected automatically; use Node.js 20 or newer.
+2. Paste **every variable name** from `.env.example` into **Project → Settings → Environment
+   Variables**, adding real values only in Vercel. At minimum set Supabase, Firebase, Gemini and
+   Razorpay keys, `NEXT_PUBLIC_SITE_URL=https://your-domain`, and `ADMIN_EMAILS=you@example.com`.
+3. Apply `sql/schema.sql` to the production Supabase project before the first real account signs in.
+4. Add the final Vercel/custom domain to **Firebase → Authentication → Settings → Authorized
+   domains**.
+5. Add `https://your-domain/auth/callback` to **Supabase → Authentication → URL Configuration →
+   Redirect URLs**, and set the same domain as the Site URL.
+6. Configure the Razorpay webhook URL as `https://your-domain/api/webhooks/razorpay` and use the exact
+   same webhook secret in Vercel.
+7. Redeploy after changing environment variables. Open `/api/health`: `supabase`, `serviceRole`,
+   `firebaseAuth`, `gemini`, `razorpay`, and `razorpayWebhook` should all report `true`. The endpoint
+   exposes booleans only and never returns a secret.
+8. Complete one real Google sign-in, Gemini tutor stream, server-graded quiz and Razorpay **test-mode**
+   payment before promoting the deployment. Do not infer integration success from a successful build.
 
 ## Security model
 
@@ -115,9 +147,11 @@ disabled in production).
 - All AI calls, quota checks and payment verification happen on the server.
 - Daily limits are stored in the database (`ai_usage` + `consume_ai_quota`), so refreshing or
   clearing the browser cannot reset them.
-- Only `NEXT_PUBLIC_*` values reach the browser. `GEMINI_API_KEY`,
-  `SUPABASE_SERVICE_ROLE_KEY`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` are server-only,
-  and `lib/env.ts` throws if a secret getter is ever touched in the browser.
+- Firebase Google ID tokens are verified server-side against Google's x509 certificates, including
+  signature, audience, issuer, timestamps and verified email, before a Supabase session is issued.
+- Only `NEXT_PUBLIC_*` values reach the browser. `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `SUPABASE_DB_URL`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` are server-only, and
+  `lib/env.ts` throws if a secret getter is ever touched in the browser.
 - Input validation (zod) on every route, per-IP/route rate limiting, signed webhooks.
 - Admin analytics is limited to the emails in `ADMIN_EMAILS`.
 
@@ -130,8 +164,9 @@ app/
   (app)/         protected product: dashboard, tutor, tutorials, quiz, solve,
                  exam-prep, flashcards, progress, profile, upgrade, admin
   api/           route handlers (AI, data, payments, webhooks, health)
-components/      ui primitives, marketing, app shell, feature modules
-lib/             ai/, data/, payments/, supabase/, plans, usage, gamification, session
+components/      ui primitives, marketing, app shell, motion layer, feature modules
+lib/             ai/, data/, firebase/, payments/, supabase/, plans, usage, session
+scripts/         database setup and deterministic PWA icon generation
 sql/schema.sql   full database schema, RLS policies and helper functions
 ```
 
