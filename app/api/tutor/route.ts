@@ -120,9 +120,30 @@ export async function POST(request: Request) {
 
     /* ------------------------------ stream setup --------------------------- */
     const encoder = new TextEncoder();
+
+    /**
+     * A student can close the tab or navigate away mid-answer. When that
+     * happens the controller is already closed, so `enqueue` must never throw
+     * (and we stop generating to save the AI budget).
+     */
+    let clientGone = false;
+    const onAbort = () => {
+      clientGone = true;
+    };
+    request.signal.addEventListener("abort", onAbort);
+
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        const send = (event: StreamEvent) => controller.enqueue(encoder.encode(sse(event)));
+        const send = (event: StreamEvent) => {
+          if (clientGone) return false;
+          try {
+            controller.enqueue(encoder.encode(sse(event)));
+            return true;
+          } catch {
+            clientGone = true;
+            return false;
+          }
+        };
 
         try {
           send({ type: "meta", conversationId });
@@ -141,7 +162,7 @@ export async function POST(request: Request) {
             });
             send({ type: "notice", message: "Running in demo mode — configure GEMINI_API_KEY for real answers." });
             for (const chunk of answer.match(/[\s\S]{1,140}/g) ?? []) {
-              send({ type: "delta", text: chunk });
+              if (!send({ type: "delta", text: chunk })) break;
               await new Promise((resolve) => setTimeout(resolve, 12));
             }
             model = "demo";
@@ -152,7 +173,7 @@ export async function POST(request: Request) {
               message: prompt,
             });
 
-            while (true) {
+            while (!clientGone) {
               const next = await generator.next();
               if (next.done) {
                 model = next.value.model;
@@ -160,7 +181,7 @@ export async function POST(request: Request) {
                 answer = next.value.text;
                 break;
               }
-              send({ type: "delta", text: next.value.delta });
+              if (!send({ type: "delta", text: next.value.delta })) break;
             }
           }
 
@@ -235,8 +256,16 @@ export async function POST(request: Request) {
             message: payload.error?.message ?? "Something went wrong. Please try again.",
           });
         } finally {
-          controller.close();
+          request.signal.removeEventListener("abort", onAbort);
+          try {
+            controller.close();
+          } catch {
+            /* already closed by the client */
+          }
         }
+      },
+      cancel() {
+        clientGone = true;
       },
     });
 
