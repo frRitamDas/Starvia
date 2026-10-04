@@ -1,0 +1,255 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme — calm paper, indigo accents */
+    --background: 220 33% 99%;
+    --foreground: 224 40% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 40% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 40% 12%;
+
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 226 30% 96%;
+    --secondary-foreground: 224 30% 22%;
+
+    --muted: 226 28% 96%;
+    --muted-foreground: 224 14% 45%;
+
+    --accent: 243 60% 96%;
+    --accent-foreground: 243 60% 35%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 60% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 32 92% 44%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 226 24% 90%;
+    --input: 226 24% 88%;
+    --ring: 243 75% 59%;
+
+    --radius: 0.75rem;
+    --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+      Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    --font-display: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+      Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif;
+  }
+
+  .dark {
+    /* Dark theme — deep study-lamp navy with violet light */
+    --background: 224 44% 6%;
+    --foreground: 220 33% 96%;
+
+    --card: 224 38% 9%;
+    --card-foreground: 220 33% 96%;
+
+    --popover: 224 40% 9%;
+    --popover-foreground: 220 33% 96%;
+
+    --primary: 243 82% 68%;
+    --primary-foreground: 226 60% 8%;
+
+    --secondary: 224 30% 14%;
+    --secondary-foreground: 220 28% 92%;
+
+    --muted: 224 28% 14%;
+    --muted-foreground: 220 16% 65%;
+
+    --accent: 243 40% 18%;
+    --accent-foreground: 240 90% 88%;
+
+    --destructive: 0 68% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 55% 48%;
+    --success-foreground: 150 60% 8%;
+
+    --warning: 36 92% 60%;
+    --warning-foreground: 30 70% 10%;
+
+    --border: 224 24% 18%;
+    --input: 224 24% 20%;
+    --ring: 243 82% 68%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    min-height: 100dvh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    @apply tracking-tight;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    @apply bg-primary/20;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Slim, theme-aware scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* Markdown / AI answer typography */
+  .prose-starvia {
+    @apply text-[15px] leading-7 text-foreground/90;
+  }
+  .prose-starvia > * + * {
+    @apply mt-3.5;
+  }
+  .prose-starvia h1 {
+    @apply mt-6 text-xl font-semibold;
+  }
+  .prose-starvia h2 {
+    @apply mt-6 text-lg font-semibold text-foreground;
+  }
+  .prose-starvia h3 {
+    @apply mt-5 text-base font-semibold text-foreground;
+  }
+  .prose-starvia ul {
+    @apply ml-5 list-disc space-y-1.5;
+  }
+  .prose-starvia ol {
+    @apply ml-5 list-decimal space-y-1.5;
+  }
+  .prose-starvia li > ul,
+  .prose-starvia li > ol {
+    @apply mt-1.5;
+  }
+  .prose-starvia strong {
+    @apply font-semibold text-foreground;
+  }
+  .prose-starvia a {
+    @apply font-medium text-primary underline underline-offset-4;
+  }
+  .prose-starvia blockquote {
+    @apply border-l-2 border-primary/40 pl-4 italic text-muted-foreground;
+  }
+  .prose-starvia code:not(pre code) {
+    @apply rounded-md bg-muted px-1.5 py-0.5 text-[13px] font-medium text-foreground;
+  }
+  .prose-starvia pre {
+    @apply overflow-x-auto rounded-xl border border-border/70 bg-muted/60 p-4 text-[13px] leading-6;
+  }
+  .prose-starvia pre code {
+    @apply bg-transparent p-0 text-[13px];
+  }
+  .prose-starvia table {
+    @apply w-full border-collapse overflow-hidden rounded-xl border border-border/70 text-sm;
+  }
+  .prose-starvia th {
+    @apply bg-muted/60 px-3 py-2 text-left font-semibold;
+  }
+  .prose-starvia td {
+    @apply border-t border-border/60 px-3 py-2 align-top;
+  }
+  .prose-starvia hr {
+    @apply my-5 border-border/70;
+  }
+  .prose-starvia img {
+    @apply rounded-xl border border-border/70;
+  }
+
+  /* Larger maths blocks scroll instead of overflowing on phones */
+  .prose-starvia .katex-display {
+    @apply overflow-x-auto overflow-y-hidden py-1;
+  }
+  .prose-starvia .katex {
+    font-size: 1.02em;
+  }
+
+  .surface-grid {
+    background-image: radial-gradient(hsl(var(--border) / 0.7) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  .glass {
+    @apply border border-border/60 bg-background/80 backdrop-blur-xl backdrop-saturate-150;
+  }
+
+  .text-gradient {
+    @apply bg-brand-gradient bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  }
+
+  /* Respect reduced-motion for every animation in the app */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
