@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 /**
  * Starvia brand marks.
  *
- * The mark is an original inline SVG (a four-point study star inside a soft
+ * The preferred production mark is the supplied Starvia PNG. The inline SVG (a four-point study star inside a soft
  * orbit) so the app has a crisp, dependency-free identity. If you prefer the
  * PNG logo, either:
  *   - set NEXT_PUBLIC_BRAND_LOGO="/starvia-logo.png" (and MARK for the symbol), or
@@ -12,8 +12,8 @@ import { cn } from "@/lib/utils";
  * See README → "Brand assets".
  */
 
-const LOGO_SRC = process.env.NEXT_PUBLIC_BRAND_LOGO || "";
-const MARK_SRC = process.env.NEXT_PUBLIC_BRAND_MARK || "";
+const LOGO_SRC = process.env.NEXT_PUBLIC_BRAND_LOGO || "https://i.ibb.co/67wrxnqc/file-000000001990820baea60f97f4c99390.png";
+const MARK_SRC = process.env.NEXT_PUBLIC_BRAND_MARK || "https://i.ibb.co/YTtrtK6W/file-0000000060d481fa9b38f3126e338bc6.png";
 
 export function StarviaMark({ className, size = 32 }: { className?: string; size?: number }) {
   if (MARK_SRC) {
