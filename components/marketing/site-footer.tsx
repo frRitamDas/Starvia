@@ -13,7 +13,7 @@ export function SiteFooter() {
       <div className="container py-12 lg:py-16">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="space-y-4">
-            <StarviaLogo />
+            <StarviaLogo markSize={30} />
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
               {siteConfig.shortDescription}
             </p>
@@ -22,7 +22,7 @@ export function SiteFooter() {
                 <ShieldCheck className="size-3.5" />
                 {siteConfig.version}
               </Badge>
-              <Badge variant="secondary">Made in India 🇮🇳</Badge>
+              <Badge variant="secondary">Made for Indian learners</Badge>
             </div>
           </div>
 
