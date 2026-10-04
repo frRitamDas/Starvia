@@ -8,9 +8,9 @@ export const siteConfig = {
   instagram: "https://instagram.com/vxritam",
   instagramHandle: "@vxritam",
   supportEmail: "support@starvia.study",
-  tagline: "Your AI study companion",
+  tagline: "A calmer way to learn with AI",
   shortDescription:
-    "Starvia is an AI study platform for Indian school students — learn concepts, solve doubts, practise with quizzes and prepare for ICSE, CBSE and state board exams.",
+    "Starvia is a focused AI study workspace for Indian students — understand concepts, practise deliberately and prepare with confidence.",
   description:
     "Starvia is a premium AI study platform for Indian school students (CBSE, ICSE and State Board, Classes 6–12). Ask an AI tutor, generate tutorials and quizzes, solve questions from a photo, revise with flashcards and track your progress — all in one focused study workspace.",
   keywords: [
