@@ -40,8 +40,10 @@ interface ChatCompletionStreamChunk {
 function modelFor(alias: ModelAlias) {
   switch (alias) {
     case "fast":
-    case "vision":
+      return serverEnv.naraRouterModelFast;
     case "pro":
+      return serverEnv.naraRouterModelPro;
+    case "vision":
     case "default":
     default:
       return serverEnv.naraRouterModelDefault;
