@@ -7,6 +7,7 @@ import { ArrowRight, LayoutDashboard, Menu, Sparkles } from "lucide-react";
 
 import { StarviaLogo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { siteConfig } from "@/lib/site";
@@ -28,7 +29,13 @@ export function SiteHeader({ signedIn = false }: SiteHeaderProps) {
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/75">
         <div className="container flex h-16 min-w-0 items-center justify-between gap-3">
-          <StarviaLogo />
+          <div className="flex min-w-0 items-center gap-3">
+            <StarviaLogo />
+            <Badge variant="secondary" className="hidden gap-1.5 border-border/70 text-[10px] font-medium sm:inline-flex">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              AI study workspace
+            </Badge>
+          </div>
 
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
             {siteConfig.nav.map((item) => {

@@ -1,10 +1,26 @@
 import { serverEnv } from "@/lib/env";
+import {
+  generateTextNaraRouter,
+  naraRouterConfigured,
+  naraRouterSupportsRequest,
+  streamTextNaraRouter,
+} from "@/lib/ai/nararouter";
+import { AiError } from "@/lib/ai/types";
+import type {
+  AiContent,
+  AiRole,
+  GenerateOptions,
+  GenerateResult,
+  ModelAlias,
+  StreamChunk,
+  StreamResult,
+} from "@/lib/ai/types";
 
 /**
- * Gemini provider abstraction.
+ * Central AI provider abstraction.
  *
- * The whole app talks to Gemini through this file only. Swapping to a paid tier,
- * a different model, or (later) another provider is a change in ONE place.
+ * The app talks to this file only. Gemini remains the native fallback/vision
+ * provider; NaraRouter is an opt-in text provider selected through env.
  * The REST API is used directly — no vendor SDK — to keep the bundle small and
  * the surface area auditable.
  *
@@ -13,56 +29,18 @@ import { serverEnv } from "@/lib/env";
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-export type AiRole = "user" | "model";
-
-export interface AiPart {
-  text?: string;
-  inlineData?: { mimeType: string; data: string };
-}
-
-export interface AiContent {
-  role: AiRole;
-  parts: AiPart[];
-}
-
-export interface GenerateOptions {
-  system?: string;
-  messages: AiContent[];
-  temperature?: number;
-  topP?: number;
-  maxOutputTokens?: number;
-  /** "application/json" forces Gemini into strict JSON output mode. */
-  responseMimeType?: "text/plain" | "application/json";
-  /** Model alias; resolved against env so models can be swapped without redeploys. */
-  model?: ModelAlias;
-  timeoutMs?: number;
-  /** Cache-friendly label used only in logs. */
-  label?: string;
-}
-
-export type ModelAlias = "default" | "fast" | "vision" | "pro";
-
-export interface GenerateResult {
-  text: string;
-  model: string;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  finishReason: string | null;
-  latencyMs: number;
-}
-
-export class AiError extends Error {
-  code: "not_configured" | "unavailable" | "quota" | "blocked" | "timeout" | "bad_response";
-  detail?: string;
-
-  constructor(code: AiError["code"], message: string, detail?: string) {
-    super(message);
-    this.name = "AiError";
-    this.code = code;
-    this.detail = detail;
-  }
-}
+export {
+  AiError,
+} from "@/lib/ai/types";
+export type {
+  AiContent,
+  AiRole,
+  GenerateOptions,
+  GenerateResult,
+  ModelAlias,
+  StreamChunk,
+  StreamResult,
+} from "@/lib/ai/types";
 
 export function resolveModel(alias: ModelAlias = "default"): string {
   switch (alias) {
@@ -79,7 +57,7 @@ export function resolveModel(alias: ModelAlias = "default"): string {
 
 export function aiConfigured() {
   try {
-    return Boolean(serverEnv.geminiApiKey);
+    return Boolean(serverEnv.geminiApiKey || naraRouterConfigured());
   } catch {
     return false;
   }
@@ -191,7 +169,7 @@ function sleep(ms: number) {
 }
 
 /** Non-streaming generation. Returns plain text plus token accounting. */
-export async function generateText(options: GenerateOptions): Promise<GenerateResult> {
+async function generateTextGemini(options: GenerateOptions): Promise<GenerateResult> {
   if (!aiConfigured()) {
     throw new AiError("not_configured", "AI is not configured for this deployment yet.");
   }
@@ -256,23 +234,36 @@ export async function generateText(options: GenerateOptions): Promise<GenerateRe
   };
 }
 
-export interface StreamChunk {
-  text: string;
-}
+export async function generateText(options: GenerateOptions): Promise<GenerateResult> {
+  if (!aiConfigured()) {
+    throw new AiError("not_configured", "AI is not configured for this deployment yet.");
+  }
 
-export interface StreamResult {
-  model: string;
-  totalTokens: number;
-  promptTokens: number;
-  completionTokens: number;
-  latencyMs: number;
+  if (serverEnv.aiProvider === "nararouter" && naraRouterSupportsRequest(options)) {
+    try {
+      return await generateTextNaraRouter(options);
+    } catch (error) {
+      console.warn("[ai] NaraRouter request failed before completion; using Gemini fallback.", error);
+      if (!serverEnv.geminiApiKey) throw error;
+    }
+  }
+
+  if (serverEnv.geminiApiKey) {
+    return generateTextGemini(options);
+  }
+
+  if (naraRouterSupportsRequest(options) && naraRouterConfigured()) {
+    return generateTextNaraRouter(options);
+  }
+
+  throw new AiError("not_configured", "No compatible AI provider is configured for this request.");
 }
 
 /**
  * Streaming generation over SSE. Emits plain text deltas.
  * The caller is responsible for persisting the final message.
  */
-export async function* streamText(
+async function* streamGeminiText(
   options: GenerateOptions,
 ): AsyncGenerator<StreamChunk, StreamResult, void> {
   if (!aiConfigured()) {
@@ -362,6 +353,59 @@ export async function* streamText(
     completionTokens,
     latencyMs: Date.now() - started,
   };
+}
+
+export async function* streamText(
+  options: GenerateOptions,
+): AsyncGenerator<StreamChunk, StreamResult, void> {
+  if (!aiConfigured()) {
+    throw new AiError("not_configured", "AI is not configured for this deployment yet.");
+  }
+
+  if (serverEnv.aiProvider === "nararouter" && naraRouterSupportsRequest(options)) {
+    let emitted = false;
+    try {
+      const generator = streamTextNaraRouter(options);
+      while (true) {
+        const next = await generator.next();
+        if (next.done) return next.value;
+        emitted = true;
+        yield next.value;
+      }
+    } catch (error) {
+      if (emitted || !serverEnv.geminiApiKey) throw error;
+      console.warn("[ai] NaraRouter stream failed before output; using Gemini fallback.", error);
+    }
+  }
+
+  if (serverEnv.geminiApiKey) {
+    let emitted = false;
+    try {
+      const generator = streamGeminiText(options);
+      while (true) {
+        const next = await generator.next();
+        if (next.done) return next.value;
+        emitted = true;
+        yield next.value;
+      }
+    } catch (error) {
+      if (emitted || !naraRouterSupportsRequest(options) || !naraRouterConfigured()) {
+        throw error;
+      }
+      console.warn("[ai] Gemini stream failed before output; using NaraRouter fallback.", error);
+    }
+  }
+
+  if (naraRouterSupportsRequest(options) && naraRouterConfigured()) {
+    const generator = streamTextNaraRouter(options);
+    while (true) {
+      const next = await generator.next();
+      if (next.done) return next.value;
+      yield next.value;
+    }
+  }
+
+  throw new AiError("not_configured", "No compatible AI provider is configured for this request.");
 }
 
 /**
