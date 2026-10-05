@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSubscription, mockCheckoutAvailable, paymentsAvailable } from "@/lib/payments/service";
+import { razorpayRecurringPlanStatus } from "@/lib/env";
 import { AI_FEATURES, FEATURE_LABELS, PLANS, PLAN_ORDER, type BillingInterval } from "@/lib/plans";
 import { requireOnboarded } from "@/lib/session";
 import { getUsageSummary } from "@/lib/usage";
@@ -46,6 +47,7 @@ export default async function UpgradePage() {
 
   const periodEnd = subscription?.current_period_end ?? null;
   const billingInterval = (subscription?.billing_interval as BillingInterval | null) ?? null;
+  const recurringPlans = razorpayRecurringPlanStatus();
 
   return (
     <div className="space-y-8">
@@ -67,6 +69,7 @@ export default async function UpgradePage() {
           currentPlan={context.plan}
           paymentsAvailable={paymentsAvailable()}
           mockAvailable={mockCheckoutAvailable()}
+          recurringPlans={recurringPlans}
           signedIn
         />
       </section>
