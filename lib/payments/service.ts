@@ -203,6 +203,7 @@ export async function startCheckout(
       prefill: { email: context.user.email, name: context.profile?.full_name ?? null },
     };
   } catch (error) {
+    if (error instanceof ApiError) throw error;
     console.error("[payments] subscription create failed:", error);
     if (error instanceof RazorpayError && error.status >= 400 && error.status < 500) {
       throw new ApiError(
