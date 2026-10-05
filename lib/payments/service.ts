@@ -810,7 +810,7 @@ export async function handleWebhookEvent(event: {
         plan,
         amountInr: Math.round((paymentEntity?.amount ?? 0) / 100),
         paymentId: paymentEntity?.id ?? null,
-        subscriptionId: paymentEntity?.subscription_id ?? null,
+        providerSubscriptionId: paymentEntity?.subscription_id ?? null,
         orderId: paymentEntity?.order_id ?? null,
       });
       return { handled: true, action: eventName, userId };
