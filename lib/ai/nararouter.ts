@@ -247,10 +247,37 @@ export async function* streamTextNaraRouter(
       `[ai:nararouter:stream:${options.label ?? "text"}] ${response.status}`,
       raw.slice(0, 500),
     );
+
+    // Some routed models reject SSE even though the same model supports the
+    // OpenAI-compatible non-streaming endpoint. Preserve tutor availability by
+    // transparently falling back to a single non-streaming chunk before giving
+    // up. Other HTTP errors still surface normally.
+    if (response.status === 400) {
+      try {
+        const result = await generateTextNaraRouter(options);
+        yield { text: result.text };
+        return {
+          model: result.model,
+          totalTokens: result.totalTokens,
+          promptTokens: result.promptTokens,
+          completionTokens: result.completionTokens,
+          latencyMs: result.latencyMs,
+        };
+      } catch {
+        // Fall through to the original provider error below.
+      }
+    }
+
     throw mapError(response.status, raw);
   }
 
   const reader = response.body.getReader();
+  let streamTimedOut = false;
+  const streamTimeoutMs = options.timeoutMs ?? serverEnv.aiTimeoutMs;
+  const streamTimer = setTimeout(() => {
+    streamTimedOut = true;
+    void reader.cancel().catch(() => undefined);
+  }, streamTimeoutMs);
   const decoder = new TextDecoder();
   let buffer = "";
   let model = modelFor(options.model ?? "default");
@@ -259,11 +286,15 @@ export async function* streamTextNaraRouter(
   let totalTokens = 0;
   let sawText = false;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (streamTimedOut) {
+        throw new AiError("timeout", "AI took too long to respond. Please try again.");
+      }
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true });
 
     const events = buffer.split(/\r?\n\r?\n/);
     buffer = events.pop() ?? "";
@@ -300,15 +331,21 @@ export async function* streamTextNaraRouter(
     }
   }
 
-  if (!sawText) {
-    throw new AiError("bad_response", "AI didn't return an answer. Please try again.");
-  }
+    if (streamTimedOut) {
+      throw new AiError("timeout", "AI took too long to respond. Please try again.");
+    }
+    if (!sawText) {
+      throw new AiError("bad_response", "AI didn't return an answer. Please try again.");
+    }
 
-  return {
-    model,
-    totalTokens,
-    promptTokens,
-    completionTokens,
-    latencyMs: Date.now() - started,
-  };
+    return {
+      model,
+      totalTokens,
+      promptTokens,
+      completionTokens,
+      latencyMs: Date.now() - started,
+    };
+  } finally {
+    clearTimeout(streamTimer);
+  }
 }
