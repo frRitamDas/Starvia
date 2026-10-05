@@ -85,10 +85,16 @@ export async function consumeQuota(
     return { feature, used: used + amount, limit, remaining: limit - (used + amount), unlimited: false };
   }
 
-  const client = context.admin ?? context.db;
-  if (!client) throw new ApiError("SERVER_ERROR");
+  // Quota mutation is server-only. The public client never gets an
+  // executable path to this SECURITY DEFINER function.
+  const client = context.admin;
+  if (!client) {
+    throw new ApiError(
+      "SERVER_ERROR",
+      "Study services are not configured correctly. Please try again later.",
+    );
+  }
 
-  /* -------------------- atomic RPC (preferred path) --------------------- */
   const { data: rpcData, error: rpcError } = await client.rpc("consume_ai_quota", {
     p_user_id: context.user.id,
     p_feature: feature,
@@ -96,62 +102,27 @@ export async function consumeQuota(
     p_amount: amount,
   });
 
-  if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
-    const row = rpcData[0] as { allowed: boolean; used: number; remaining: number };
-    if (!row.allowed) {
-      throw new ApiError("LIMIT_REACHED", limitMessage(feature), {
-        feature,
-        used: row.used,
-        limit,
-        resetsInMs: msUntilReset(),
-        upgrade: true,
-      });
-    }
-    return { feature, used: row.used, limit, remaining: row.remaining, unlimited: false };
+  if (rpcError || !Array.isArray(rpcData) || rpcData.length === 0) {
+    console.error("[usage] consume_ai_quota RPC failed:", rpcError?.message ?? "empty result");
+    throw new ApiError(
+      "SERVER_ERROR",
+      "Study services are temporarily unavailable. Please try again.",
+    );
   }
 
-  if (rpcError) {
-    console.error("[usage] consume_ai_quota RPC failed, falling back:", rpcError.message);
-  }
-
-  /* ------------------- fallback: optimistic read + write ---------------- */
-  if (!context.db) throw new ApiError("SERVER_ERROR");
-  const today = demoToday();
-  const { data: existing } = await context.db
-    .from("ai_usage")
-    .select("used")
-    .eq("user_id", context.user.id)
-    .eq("usage_date", today)
-    .eq("feature", feature)
-    .maybeSingle();
-
-  const used = (existing as { used: number } | null)?.used ?? 0;
-  if (used + amount > limit) {
+  const row = rpcData[0] as { allowed: boolean; used: number; remaining: number };
+  if (!row.allowed) {
     throw new ApiError("LIMIT_REACHED", limitMessage(feature), {
       feature,
-      used,
+      used: row.used,
       limit,
       resetsInMs: msUntilReset(),
       upgrade: true,
     });
   }
 
-  const { error: upsertError } = await context.db.from("ai_usage").upsert(
-    {
-      user_id: context.user.id,
-      usage_date: today,
-      feature,
-      used: used + amount,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,usage_date,feature" },
-  );
-  if (upsertError) {
-    console.error("[usage] upsert failed:", upsertError.message);
-    throw new ApiError("SERVER_ERROR");
-  }
+  return { feature, used: row.used, limit, remaining: row.remaining, unlimited: false };
 
-  return { feature, used: used + amount, limit, remaining: limit - (used + amount), unlimited: false };
 }
 
 /**
