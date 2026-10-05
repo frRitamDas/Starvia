@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 import { integrationStatus, razorpayRecurringPlanStatus } from "@/lib/env";
 
 /**
- * Deployment health check. Reports which integrations are configured
- * (booleans only — never keys) so you can verify a Vercel setup quickly.
+ * Configuration health check. It reports whether required environment and
+ * integration settings are present; it does not call billable AI/payment
+ * providers. Live AI verification is admin-only via /api/admin/ai-diagnostics.
  */
 export async function GET() {
   const status = integrationStatus();
@@ -24,6 +25,8 @@ export async function GET() {
         app: "starvia",
         version: process.env.NEXT_PUBLIC_APP_VERSION ?? "1.0.0",
         time: new Date().toISOString(),
+        checkType: "configuration",
+        operationalStatus: "not_probed",
         integrations: status,
         recurringPlans,
         warnings,
