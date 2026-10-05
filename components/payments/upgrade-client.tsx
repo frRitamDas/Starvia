@@ -339,16 +339,18 @@ export function PlanGrid({
         })}
       </div>
 
-      {paymentsAvailable && (
+      {paymentsAvailable &&
+      ((billing === "yearly" && (!recurringPlans.proYearly || !recurringPlans.ultraYearly)) ||
+        (billing === "monthly" && (!recurringPlans.proMonthly || !recurringPlans.ultraMonthly))) ? (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-warning/30 bg-warning/[0.06] p-4 text-[12.5px]">
           <AlertTriangle className="size-4 shrink-0 text-warning" />
           <p className="min-w-0 flex-1">
             {billing === "yearly"
-              ? "Yearly recurring plans must be configured in Razorpay before annual checkout is enabled."
-              : "Monthly recurring plans must be configured in Razorpay before monthly checkout is enabled."}
+              ? "Annual checkout is not fully configured yet. Configure the Pro and Ultra yearly Razorpay plans before accepting annual subscriptions."
+              : "Monthly checkout is not fully configured yet. Configure the Pro and Ultra monthly Razorpay plans before accepting monthly subscriptions."}
           </p>
         </div>
-      )}
+      ) : null}
       {!paymentsAvailable ? (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-warning/30 bg-warning/[0.06] p-4 text-[12.5px]">
           <AlertTriangle className="size-4 shrink-0 text-warning" />
