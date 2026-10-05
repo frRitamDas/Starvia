@@ -48,6 +48,14 @@ export const serverEnv = {
     assertServer("naraRouterModelDefault");
     return read("NARAROUTER_MODEL_DEFAULT", "auto/bynara");
   },
+  get naraRouterModelFast() {
+    assertServer("naraRouterModelFast");
+    return read("NARAROUTER_MODEL_FAST") || read("NARAROUTER_MODEL_DEFAULT", "auto/bynara");
+  },
+  get naraRouterModelPro() {
+    assertServer("naraRouterModelPro");
+    return read("NARAROUTER_MODEL_PRO") || read("NARAROUTER_MODEL_DEFAULT", "auto/bynara");
+  },
   get geminiApiKey() {
     assertServer("geminiApiKey");
     return read("GEMINI_API_KEY") || read("GOOGLE_GENERATIVE_AI_API_KEY");
