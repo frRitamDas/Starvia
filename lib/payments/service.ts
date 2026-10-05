@@ -278,7 +278,18 @@ export async function confirmSubscriptionPayment(
     throw new ApiError("BAD_REQUEST", "We couldn't match that subscription to a valid Starvia plan.");
   }
 
+  if (
+    (pending.provider_plan_id && subscription.plan_id && pending.provider_plan_id !== subscription.plan_id) ||
+    (pending.billing_interval && pending.billing_interval !== billing)
+  ) {
+    throw new ApiError("BAD_REQUEST", "The payment session no longer matches the selected Starvia plan.");
+  }
+
   const payment = await fetchPayment(input.paymentId);
+  if (payment.subscription_id && payment.subscription_id !== input.subscriptionId) {
+    throw new ApiError("FORBIDDEN", "That payment does not belong to this subscription.");
+  }
+
   const expectedPaise = billingPrice(planId, billing) * 100;
   if (payment.status !== "captured" && payment.status !== "authorized") {
     throw new ApiError("BAD_REQUEST", "That payment was not completed. No plan was changed.");
