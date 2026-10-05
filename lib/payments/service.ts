@@ -441,6 +441,7 @@ export async function activatePlan(
       paymentId: input.providerPaymentId ?? null,
       subscriptionId,
       signatureVerified: !input.isMock,
+      provider: input.provider,
     });
   }
 
@@ -566,6 +567,7 @@ async function recordPayment(
     paymentId: string | null;
     subscriptionId?: string | null;
     signatureVerified: boolean;
+    provider?: "razorpay" | "mock";
   },
 ) {
   if (!context.user) return;
@@ -577,7 +579,7 @@ async function recordPayment(
     amount_inr: input.amountInr,
     currency: "INR",
     status: input.status,
-    provider: "razorpay" as const,
+    provider: input.provider ?? "razorpay",
     order_id: input.orderId,
     payment_id: input.paymentId,
     subscription_id: input.subscriptionId ?? null,
