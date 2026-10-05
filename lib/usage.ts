@@ -154,6 +154,58 @@ export async function consumeQuota(
   return { feature, used: used + amount, limit, remaining: limit - (used + amount), unlimited: false };
 }
 
+/**
+ * Refund quota only for a request that was charged but did not complete.
+ * The database function is atomic and never allows the counter below zero.
+ */
+export async function refundQuota(
+  context: SessionContext,
+  feature: AiFeature,
+  amount = 1,
+): Promise<{ refunded: number; used: number; remaining: number }> {
+  if (!context.user || amount <= 0) {
+    return { refunded: 0, used: 0, remaining: limitFor(context, feature) };
+  }
+
+  const limit = limitFor(context, feature);
+  if (limit >= UNLIMITED) {
+    return { refunded: 0, used: 0, remaining: UNLIMITED };
+  }
+
+  if (context.demo) {
+    const store = demoStore();
+    const key = demoUsageKey(feature, demoToday());
+    const used = store.usage.get(key) ?? 0;
+    const refunded = Math.min(amount, used);
+    const next = Math.max(0, used - refunded);
+    if (next === 0) store.usage.delete(key);
+    else store.usage.set(key, next);
+    return { refunded, used: next, remaining: Math.max(0, limit - next) };
+  }
+
+  const client = context.admin ?? context.db;
+  if (!client) return { refunded: 0, used: 0, remaining: limit };
+
+  const { data, error } = await client.rpc("refund_ai_quota", {
+    p_user_id: context.user.id,
+    p_feature: feature,
+    p_limit: limit,
+    p_amount: amount,
+  });
+
+  if (error || !Array.isArray(data) || data.length === 0) {
+    console.error("[usage] refund_ai_quota failed:", error?.message ?? "empty result");
+    return { refunded: 0, used: 0, remaining: limit };
+  }
+
+  const row = data[0] as { refunded: number; used: number; remaining: number };
+  return {
+    refunded: Math.max(0, row.refunded ?? 0),
+    used: Math.max(0, row.used ?? 0),
+    remaining: Math.max(0, row.remaining ?? 0),
+  };
+}
+
 /** Record token consumption so cost stays visible in the admin panel. */
 export async function addTokenUsage(context: SessionContext, feature: AiFeature, tokens: number) {
   if (tokens <= 0 || !context.user) return;
