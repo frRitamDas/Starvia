@@ -265,7 +265,7 @@ export function subscriptionGrantsAccess(sub: {
   current_period_end: string | null;
 } | null): boolean {
   if (!sub) return true; // no row => free tier
-  const statusAllowsAccess = ["active", "authenticated", "created", "pending"].includes(sub.status)
+  const statusAllowsAccess = sub.status === "active"
     || (sub.status === "cancelled" && Boolean(sub.current_period_end));
   if (!statusAllowsAccess) return false;
   if (!sub.current_period_end) return true;
