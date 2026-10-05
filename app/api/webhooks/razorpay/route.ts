@@ -11,10 +11,11 @@ export const dynamic = "force-dynamic";
  *
  * Configure in Razorpay Dashboard → Settings → Webhooks:
  *   URL:    https://<your-domain>/api/webhooks/razorpay
- *   Events: payment.captured, payment.failed, subscription.activated,
- *           subscription.authenticated, subscription.charged,
- *           subscription.pending, subscription.halted, subscription.cancelled,
- *           subscription.completed, subscription.expired
+ *   Events: payment.captured, payment.failed, payment.refunded,
+ *           subscription.activated, subscription.authenticated, subscription.charged,
+ *           subscription.pending, subscription.halted, subscription.paused,
+ *           subscription.resumed, subscription.cancelled, subscription.completed,
+ *           subscription.expired
  *   Secret: RAZORPAY_WEBHOOK_SECRET
  *
  * The raw body is used for signature verification (never re-serialised JSON),
