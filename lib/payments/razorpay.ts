@@ -86,6 +86,18 @@ export interface RazorpaySubscription {
   notes?: Record<string, string>;
 }
 
+export interface RazorpayPlan {
+  id: string;
+  interval: number;
+  period: "daily" | "weekly" | "monthly" | "yearly" | string;
+  item?: {
+    id?: string;
+    active?: boolean;
+    amount?: number;
+    currency?: string;
+  };
+}
+
 export interface RazorpayPayment {
   id: string;
   order_id: string | null;
@@ -126,12 +138,16 @@ export async function createSubscription(input: {
     method: "POST",
     body: JSON.stringify({
       plan_id: input.planId,
-      total_count: input.totalCount ?? 120,
+      total_count: input.totalCount ?? 1200,
       quantity: 1,
       customer_notify: 1,
       notes: input.notes ?? {},
     }),
   });
+}
+
+export async function fetchPlan(planId: string): Promise<RazorpayPlan> {
+  return call<RazorpayPlan>(`/plans/${encodeURIComponent(planId)}`);
 }
 
 export async function fetchSubscription(subscriptionId: string): Promise<RazorpaySubscription> {
