@@ -1,7 +1,7 @@
 import { guard, readJson } from "@/lib/api/helpers";
 import { ApiError, handleError, rateLimit } from "@/lib/http";
 import { requireOnboarded } from "@/lib/session";
-import { consumeQuota, addTokenUsage, logAiEvent } from "@/lib/usage";
+import { consumeQuota, refundQuota, addTokenUsage, logAiEvent } from "@/lib/usage";
 import { awardXp, checkAchievements } from "@/lib/gamification";
 import { getAchievementStats } from "@/lib/data/stats";
 import {
@@ -44,6 +44,9 @@ function sse(event: StreamEvent) {
 export async function POST(request: Request) {
   // We stream, so errors are reported inside the stream rather than as JSON.
   let audit: SessionContext | null = null;
+  let quotaConsumed = false;
+  let quotaSettled = false;
+  let quotaRefunded = false;
 
   try {
     const ctx = await requireOnboarded();
@@ -57,6 +60,7 @@ export async function POST(request: Request) {
     const parsed = tutorChatSchema.parse(await readJson(request));
 
     await consumeQuota(ctx, "tutor");
+    quotaConsumed = true;
 
     const profile = ctx.profile;
     const classLevel = parsed.classLevel ?? profile.class_level ?? "10";
@@ -196,34 +200,45 @@ export async function POST(request: Request) {
             latencyMs,
           });
 
-          await touchConversation(ctx, conversationId, {
-            title: parsed.message.slice(0, 80),
-            subject: studentContext.subject,
-            topic: studentContext.topic,
-          });
+          // The answer is now persisted. From here onward, bookkeeping must
+          // never turn a successful AI response into a charged error.
+          quotaSettled = true;
 
-          if (studentContext.subject) {
-            await upsertTopicStatus(ctx, {
+          await Promise.allSettled([
+            touchConversation(ctx, conversationId, {
+              title: parsed.message.slice(0, 80),
               subject: studentContext.subject,
-              topic: studentContext.topic ?? "General doubts",
-              status: "learning",
-              minutesSpent: 2,
-            }).catch(() => undefined);
+              topic: studentContext.topic,
+            }),
+            studentContext.subject
+              ? upsertTopicStatus(ctx, {
+                  subject: studentContext.subject,
+                  topic: studentContext.topic ?? "General doubts",
+                  status: "learning",
+                  minutesSpent: 2,
+                })
+              : Promise.resolve(),
+            touchActivity(ctx, 2),
+            addTokenUsage(ctx, "tutor", tokens),
+            logAiEvent(ctx, {
+              feature: "tutor",
+              status: "success",
+              model,
+              latencyMs,
+              tokens,
+            }),
+          ]);
+
+          let xp = { gained: 0, level: 1, leveledUp: false };
+          let unlocked: Array<{ code: string; title: string; description: string }> = [];
+          try {
+            const earned = await awardXp(ctx, "tutor_message");
+            xp = earned ?? xp;
+            const stats = await getAchievementStats(ctx);
+            unlocked = await checkAchievements(ctx, stats);
+          } catch (rewardError) {
+            console.error("[tutor] non-critical reward bookkeeping failed:", rewardError);
           }
-
-          await touchActivity(ctx, 2);
-          await addTokenUsage(ctx, "tutor", tokens);
-          await logAiEvent(ctx, {
-            feature: "tutor",
-            status: "success",
-            model,
-            latencyMs,
-            tokens,
-          });
-
-          const xp = await awardXp(ctx, "tutor_message");
-          const stats = await getAchievementStats(ctx);
-          const unlocked = await checkAchievements(ctx, stats);
 
           send({
             type: "done",
@@ -245,15 +260,26 @@ export async function POST(request: Request) {
           const payload = (await response.json()) as {
             error?: { code?: string; message?: string };
           };
+
+          if (quotaConsumed && !quotaSettled && !quotaRefunded) {
+            const refund = await refundQuota(audit ?? ctx, "tutor").catch((refundError) => {
+              console.error("[tutor] quota refund failed:", refundError);
+              return { refunded: 0, used: 0, remaining: 0 };
+            });
+            quotaRefunded = refund.refunded > 0;
+          }
+
           await logAiEvent(audit, {
             feature: "tutor",
             status: error instanceof AiError && error.code === "blocked" ? "blocked" : "error",
             errorCode: payload.error?.code ?? "SERVER_ERROR",
           });
+
           send({
             type: "error",
             code: payload.error?.code ?? "SERVER_ERROR",
             message: payload.error?.message ?? "Something went wrong. Please try again.",
+            refunded: quotaRefunded,
           });
         } finally {
           request.signal.removeEventListener("abort", onAbort);
@@ -278,6 +304,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    if (quotaConsumed && !quotaSettled && !quotaRefunded && audit) {
+      const refund = await refundQuota(audit, "tutor").catch((refundError) => {
+        console.error("[tutor] outer quota refund failed:", refundError);
+        return { refunded: 0, used: 0, remaining: 0 };
+      });
+      quotaRefunded = refund.refunded > 0;
+    }
+
     return guard("tutor", async () => {
       throw error;
     });
