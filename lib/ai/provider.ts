@@ -1,4 +1,15 @@
+import "server-only";
+
 import { serverEnv } from "@/lib/env";
+import { AiError } from "@/lib/ai/types";
+import type {
+  AiContent,
+  GenerateOptions,
+  GenerateResult,
+  ModelAlias,
+  StreamChunk,
+  StreamResult,
+} from "@/lib/ai/types";
 
 /**
  * Gemini provider abstraction.
@@ -13,56 +24,17 @@ import { serverEnv } from "@/lib/env";
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-export type AiRole = "user" | "model";
-
-export interface AiPart {
-  text?: string;
-  inlineData?: { mimeType: string; data: string };
-}
-
-export interface AiContent {
-  role: AiRole;
-  parts: AiPart[];
-}
-
-export interface GenerateOptions {
-  system?: string;
-  messages: AiContent[];
-  temperature?: number;
-  topP?: number;
-  maxOutputTokens?: number;
-  /** "application/json" forces Gemini into strict JSON output mode. */
-  responseMimeType?: "text/plain" | "application/json";
-  /** Model alias; resolved against env so models can be swapped without redeploys. */
-  model?: ModelAlias;
-  timeoutMs?: number;
-  /** Cache-friendly label used only in logs. */
-  label?: string;
-}
-
-export type ModelAlias = "default" | "fast" | "vision" | "pro";
-
-export interface GenerateResult {
-  text: string;
-  model: string;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  finishReason: string | null;
-  latencyMs: number;
-}
-
-export class AiError extends Error {
-  code: "not_configured" | "unavailable" | "quota" | "blocked" | "timeout" | "bad_response";
-  detail?: string;
-
-  constructor(code: AiError["code"], message: string, detail?: string) {
-    super(message);
-    this.name = "AiError";
-    this.code = code;
-    this.detail = detail;
-  }
-}
+export {
+  AiError,
+} from "@/lib/ai/types";
+export type {
+  AiContent,
+  GenerateOptions,
+  GenerateResult,
+  ModelAlias,
+  StreamChunk,
+  StreamResult,
+} from "@/lib/ai/types";
 
 export function resolveModel(alias: ModelAlias = "default"): string {
   switch (alias) {
