@@ -50,7 +50,9 @@ export type SubscriptionRow = {
   status: string;
   provider: string;
   provider_subscription_id: string | null;
+  provider_plan_id: string | null;
   provider_payment_id: string | null;
+  billing_interval: string | null;
   provider_customer_id: string | null;
   current_period_start: string | null;
   current_period_end: string | null;
