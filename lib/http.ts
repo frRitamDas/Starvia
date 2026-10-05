@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { AiError } from "@/lib/ai/provider";
+import { AiError } from "@/lib/ai/types";
 
 /**
  * Uniform API envelope. The client only ever renders `error.message`,
