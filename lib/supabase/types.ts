@@ -333,6 +333,10 @@ export interface Database {
         Args: { p_user_id: string; p_feature: string; p_limit: number; p_amount?: number };
         Returns: { allowed: boolean; used: number; remaining: number }[];
       };
+      refund_ai_quota: {
+        Args: { p_user_id: string; p_feature: string; p_limit: number; p_amount?: number };
+        Returns: { refunded: number; used: number; remaining: number }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { AiError } from "@/lib/ai/provider";
 
 /**
  * Uniform API envelope. The client only ever renders `error.message`,
@@ -73,6 +74,20 @@ export function fail(code: ApiErrorCode, message?: string, meta?: Record<string,
 
 /** Convert any thrown value into a safe API response. Never leaks internals. */
 export function handleError(error: unknown, context?: string) {
+  if (error instanceof AiError) {
+    const code: ApiErrorCode =
+      error.code === "not_configured"
+        ? "NOT_CONFIGURED"
+        : error.code === "blocked" || error.code === "bad_response"
+          ? "BAD_REQUEST"
+          : error.code === "quota"
+            ? "AI_UNAVAILABLE"
+            : "AI_UNAVAILABLE";
+
+    // Keep provider diagnostics server-side only. The student receives a
+    // stable, actionable message while logs retain the provider detail.
+    return fail(code, error.message);
+  }
   if (error instanceof ApiError) {
     return fail(error.code, error.message, error.meta);
   }

@@ -85,10 +85,16 @@ export async function consumeQuota(
     return { feature, used: used + amount, limit, remaining: limit - (used + amount), unlimited: false };
   }
 
-  const client = context.admin ?? context.db;
-  if (!client) throw new ApiError("SERVER_ERROR");
+  // Quota mutation is server-only. The public client never gets an
+  // executable path to this SECURITY DEFINER function.
+  const client = context.admin;
+  if (!client) {
+    throw new ApiError(
+      "SERVER_ERROR",
+      "Study services are not configured correctly. Please try again later.",
+    );
+  }
 
-  /* -------------------- atomic RPC (preferred path) --------------------- */
   const { data: rpcData, error: rpcError } = await client.rpc("consume_ai_quota", {
     p_user_id: context.user.id,
     p_feature: feature,
@@ -96,62 +102,85 @@ export async function consumeQuota(
     p_amount: amount,
   });
 
-  if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
-    const row = rpcData[0] as { allowed: boolean; used: number; remaining: number };
-    if (!row.allowed) {
-      throw new ApiError("LIMIT_REACHED", limitMessage(feature), {
-        feature,
-        used: row.used,
-        limit,
-        resetsInMs: msUntilReset(),
-        upgrade: true,
-      });
-    }
-    return { feature, used: row.used, limit, remaining: row.remaining, unlimited: false };
+  if (rpcError || !Array.isArray(rpcData) || rpcData.length === 0) {
+    console.error("[usage] consume_ai_quota RPC failed:", rpcError?.message ?? "empty result");
+    throw new ApiError(
+      "SERVER_ERROR",
+      "Study services are temporarily unavailable. Please try again.",
+    );
   }
 
-  if (rpcError) {
-    console.error("[usage] consume_ai_quota RPC failed, falling back:", rpcError.message);
-  }
-
-  /* ------------------- fallback: optimistic read + write ---------------- */
-  if (!context.db) throw new ApiError("SERVER_ERROR");
-  const today = demoToday();
-  const { data: existing } = await context.db
-    .from("ai_usage")
-    .select("used")
-    .eq("user_id", context.user.id)
-    .eq("usage_date", today)
-    .eq("feature", feature)
-    .maybeSingle();
-
-  const used = (existing as { used: number } | null)?.used ?? 0;
-  if (used + amount > limit) {
+  const row = rpcData[0] as { allowed: boolean; used: number; remaining: number };
+  if (!row.allowed) {
     throw new ApiError("LIMIT_REACHED", limitMessage(feature), {
       feature,
-      used,
+      used: row.used,
       limit,
       resetsInMs: msUntilReset(),
       upgrade: true,
     });
   }
 
-  const { error: upsertError } = await context.db.from("ai_usage").upsert(
-    {
-      user_id: context.user.id,
-      usage_date: today,
-      feature,
-      used: used + amount,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,usage_date,feature" },
-  );
-  if (upsertError) {
-    console.error("[usage] upsert failed:", upsertError.message);
-    throw new ApiError("SERVER_ERROR");
+  return { feature, used: row.used, limit, remaining: row.remaining, unlimited: false };
+
+}
+
+/**
+ * Refund quota only for a request that was charged but did not complete.
+ * The database function is atomic and never allows the counter below zero.
+ */
+export async function refundQuota(
+  context: SessionContext,
+  feature: AiFeature,
+  amount = 1,
+): Promise<{ refunded: number; used: number; remaining: number }> {
+  if (!context.user || amount <= 0) {
+    return { refunded: 0, used: 0, remaining: limitFor(context, feature) };
   }
 
-  return { feature, used: used + amount, limit, remaining: limit - (used + amount), unlimited: false };
+  const limit = limitFor(context, feature);
+  if (limit >= UNLIMITED) {
+    return { refunded: 0, used: 0, remaining: UNLIMITED };
+  }
+
+  if (context.demo) {
+    const store = demoStore();
+    const key = demoUsageKey(feature, demoToday());
+    const used = store.usage.get(key) ?? 0;
+    const refunded = Math.min(amount, used);
+    const next = Math.max(0, used - refunded);
+    if (next === 0) store.usage.delete(key);
+    else store.usage.set(key, next);
+    return { refunded, used: next, remaining: Math.max(0, limit - next) };
+  }
+
+  // Refunds are deliberately server-admin-only. Exposing this RPC to the
+  // authenticated role would let a client manufacture refunds and bypass
+  // daily limits.
+  const client = context.admin;
+  if (!client) {
+    console.error("[usage] quota refund unavailable: SUPABASE_SECRET_KEY is missing");
+    return { refunded: 0, used: 0, remaining: limit };
+  }
+
+  const { data, error } = await client.rpc("refund_ai_quota", {
+    p_user_id: context.user.id,
+    p_feature: feature,
+    p_limit: limit,
+    p_amount: amount,
+  });
+
+  if (error || !Array.isArray(data) || data.length === 0) {
+    console.error("[usage] refund_ai_quota failed:", error?.message ?? "empty result");
+    return { refunded: 0, used: 0, remaining: limit };
+  }
+
+  const row = data[0] as { refunded: number; used: number; remaining: number };
+  return {
+    refunded: Math.max(0, row.refunded ?? 0),
+    used: Math.max(0, row.used ?? 0),
+    remaining: Math.max(0, row.remaining ?? 0),
+  };
 }
 
 /** Record token consumption so cost stays visible in the admin panel. */
