@@ -114,7 +114,7 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg" variant="gradient" className="h-13 px-7">
+              <Button asChild size="lg" variant="gradient" className="h-12 px-7">
                 <Link href="/signup">Create your free study space <ArrowRight /></Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-13 px-7">
@@ -337,16 +337,16 @@ export default function LandingPage() {
       </Section>
 
       {/* Progress */}
-      <Section className="border-y border-border/60 bg-foreground text-background">
+      <Section className="border-y border-white/15 bg-black text-white">
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-20">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-background/20 bg-background/10 px-3 py-1 text-xs font-medium">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium">
               <BarChart3 className="size-3.5" /> Your progress
             </div>
             <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">
               Make progress visible.
             </h2>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-background/65 sm:text-base">
+            <p className="mt-4 max-w-xl text-sm leading-6 text-white/65 sm:text-base">
               Study time, topics practised, quiz accuracy, weak subjects, streaks and achievements —
               presented as useful signals, not vanity numbers.
             </p>
@@ -356,10 +356,10 @@ export default function LandingPage() {
                 { value: "1.8k", label: "XP earned", icon: Zap },
                 { value: "38", label: "topics", icon: GraduationCap },
               ].map((item) => (
-                <div key={item.label} className="rounded-2xl border border-background/15 bg-background/[0.06] p-4">
-                  <item.icon className="size-4 text-background/70" />
+                <div key={item.label} className="rounded-2xl border border-white/15 bg-white/[0.06] p-4">
+                  <item.icon className="size-4 text-white/70" />
                   <p className="mt-3 text-xl font-semibold">{item.value}</p>
-                  <p className="mt-1 text-[11px] text-background/55">{item.label}</p>
+                  <p className="mt-1 text-[11px] text-white/55">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -376,7 +376,7 @@ export default function LandingPage() {
             <div className="mt-7 grid grid-cols-7 gap-2">
               {[34, 58, 46, 78, 62, 88, 70].map((value, index) => (
                 <div key={index} className="flex h-36 flex-col justify-end gap-2">
-                  <div className="rounded-t-lg bg-background/80" style={{ height: `${value}%` }} />
+                  <div className="rounded-t-lg bg-white/80" style={{ height: `${value}%` }} />
                   <span className="text-center text-[10px] text-background/45">{["M","T","W","T","F","S","S"][index]}</span>
                 </div>
               ))}
