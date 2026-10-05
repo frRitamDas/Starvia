@@ -10,11 +10,14 @@ import {
   Users,
 } from "lucide-react";
 
+import { AiDiagnosticsCard } from "@/components/admin/ai-diagnostics-card";
+import { BillingConfigurationCard } from "@/components/admin/billing-configuration-card";
 import { BarChart, ProgressRing } from "@/components/learn/stat-charts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { getAdminStats } from "@/lib/data/admin";
+import { razorpayRecurringPlanStatus } from "@/lib/env";
 import { requireOnboarded } from "@/lib/session";
 import { formatPrice, formatRelativeTime } from "@/lib/utils";
 
@@ -35,6 +38,7 @@ export default async function AdminPage() {
   if (!context.isAdmin) redirect("/dashboard");
 
   const stats = await getAdminStats(context);
+  const recurringPlans = razorpayRecurringPlanStatus();
   const { totals, revenue, ai, activity, recentFeedback } = stats;
 
   const paidUsers = totals.pro + totals.ultra;
@@ -47,7 +51,7 @@ export default async function AdminPage() {
     { icon: Users, label: "Total users", value: totals.users, hint: `${totals.onboarded} onboarded` },
     { icon: Activity, label: "Active today", value: totals.activeToday, hint: `${totals.activeWeek} this week` },
     { icon: TrendingUp, label: "Paid subscribers", value: paidUsers, hint: `${conversion}% conversion` },
-    { icon: ShieldCheck, label: "MRR (this month)", value: formatPrice(revenue.thisMonthInr), hint: `${revenue.payments} payments` },
+    { icon: ShieldCheck, label: "Revenue this month", value: formatPrice(revenue.thisMonthInr), hint: `${revenue.payments} captured payments` },
   ];
 
   return (
@@ -140,6 +144,10 @@ export default async function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AiDiagnosticsCard />
+
+      <BillingConfigurationCard recurringPlans={recurringPlans} />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>

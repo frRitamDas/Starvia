@@ -48,6 +48,14 @@ export const serverEnv = {
     assertServer("naraRouterModelDefault");
     return read("NARAROUTER_MODEL_DEFAULT", "auto/bynara");
   },
+  get naraRouterModelFast() {
+    assertServer("naraRouterModelFast");
+    return read("NARAROUTER_MODEL_FAST") || read("NARAROUTER_MODEL_DEFAULT", "auto/bynara");
+  },
+  get naraRouterModelPro() {
+    assertServer("naraRouterModelPro");
+    return read("NARAROUTER_MODEL_PRO") || read("NARAROUTER_MODEL_DEFAULT", "auto/bynara");
+  },
   get geminiApiKey() {
     assertServer("geminiApiKey");
     return read("GEMINI_API_KEY") || read("GOOGLE_GENERATIVE_AI_API_KEY");
@@ -118,6 +126,14 @@ export const naraRouterConfigured = () => Boolean(serverEnv.naraRouterApiKey);
 
 export const razorpayConfigured = () =>
   Boolean(serverEnv.razorpayKeyId && serverEnv.razorpayKeySecret);
+
+/** Public-safe status: booleans only, never the plan ids themselves. */
+export const razorpayRecurringPlanStatus = () => ({
+  proMonthly: Boolean(read("RAZORPAY_PLAN_PRO_MONTHLY") || read("RAZORPAY_PLAN_PRO")),
+  proYearly: Boolean(read("RAZORPAY_PLAN_PRO_YEARLY")),
+  ultraMonthly: Boolean(read("RAZORPAY_PLAN_ULTRA_MONTHLY") || read("RAZORPAY_PLAN_ULTRA")),
+  ultraYearly: Boolean(read("RAZORPAY_PLAN_ULTRA_YEARLY")),
+});
 
 /**
  * Demo mode gives a fully clickable product when no backend keys exist yet.

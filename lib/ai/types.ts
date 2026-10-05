@@ -19,6 +19,8 @@ export interface GenerateOptions {
   responseMimeType?: "text/plain" | "application/json";
   model?: ModelAlias;
   timeoutMs?: number;
+  /** Optional request signal so client disconnects can abort provider work. */
+  signal?: AbortSignal;
   label?: string;
 }
 

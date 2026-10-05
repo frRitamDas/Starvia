@@ -12,6 +12,7 @@
  */
 
 export type PlanId = "free" | "pro" | "ultra";
+export type BillingInterval = "monthly" | "yearly";
 
 /** Every metered AI capability. Add a key here and it is enforced everywhere. */
 export const AI_FEATURES = [
@@ -49,7 +50,7 @@ export interface Plan {
   tagline: string;
   /** Monthly price in INR. 0 = free. */
   priceInr: number;
-  /** Price shown when billed yearly (INR/month equivalent) — optional. */
+  /** Total amount charged for one annual billing cycle, in INR. */
   yearlyPriceInr: number | null;
   limits: PlanLimits;
   capabilities: PlanCapabilities;
@@ -118,7 +119,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Pro",
     tagline: "For students who study every single day.",
     priceInr: 99,
-    yearlyPriceInr: 79,
+    yearlyPriceInr: 990,
     limits: {
       tutor: 30,
       tutorial: 5,
@@ -153,7 +154,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Ultra",
     tagline: "Board exams, competitive prep, zero limits in the way.",
     priceInr: 249,
-    yearlyPriceInr: 199,
+    yearlyPriceInr: 2490,
     limits: {
       tutor: 100,
       tutorial: 15,
@@ -186,6 +187,31 @@ export const PLANS: Record<PlanId, Plan> = {
 };
 
 export const PLAN_ORDER: PlanId[] = ["free", "pro", "ultra"];
+
+export function billingPrice(planId: PlanId, billing: BillingInterval): number {
+  const plan = getPlan(planId);
+  if (plan.priceInr === 0) return 0;
+  return billing === "yearly" ? (plan.yearlyPriceInr ?? plan.priceInr * 12) : plan.priceInr;
+}
+
+export function billingLabel(billing: BillingInterval): string {
+  return billing === "yearly" ? "yearly" : "monthly";
+}
+
+/** Fallback period calculation used only when the provider does not return a period end. */
+export function billingPeriodEnd(start: Date, billing: BillingInterval): Date {
+  const end = new Date(start);
+  if (billing === "yearly") {
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
+  } else {
+    const day = end.getUTCDate();
+    end.setUTCDate(1);
+    end.setUTCMonth(end.getUTCMonth() + 1);
+    const lastDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0)).getUTCDate();
+    end.setUTCDate(Math.min(day, lastDay));
+  }
+  return end;
+}
 export const PAID_PLAN_ORDER: PlanId[] = ["pro", "ultra"];
 
 export function isPlanId(value: unknown): value is PlanId {
@@ -233,13 +259,15 @@ export type SubscriptionStatus =
   | "expired";
 export type SubscriptionProvider = "free" | "razorpay" | "mock";
 
-/** A subscription currently grants its plan when it is active/pending-paid and unexpired. */
+/** A paid subscription grants access only after activation and while its paid period is unexpired. */
 export function subscriptionGrantsAccess(sub: {
   status: SubscriptionStatus | string;
   current_period_end: string | null;
 } | null): boolean {
   if (!sub) return true; // no row => free tier
-  if (!["active", "authenticated", "created", "pending"].includes(sub.status)) return false;
+  const statusAllowsAccess = sub.status === "active"
+    || (sub.status === "cancelled" && Boolean(sub.current_period_end));
+  if (!statusAllowsAccess) return false;
   if (!sub.current_period_end) return true;
   return new Date(sub.current_period_end).getTime() > Date.now();
 }

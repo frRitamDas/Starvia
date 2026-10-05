@@ -3,7 +3,14 @@ import "server-only";
 import { ApiError } from "@/lib/http";
 import { demoMode, serverEnv, razorpayConfigured } from "@/lib/env";
 import { demoStore, demoId } from "@/lib/demo/store";
-import { PLANS, type PlanId } from "@/lib/plans";
+import {
+  PLANS,
+  billingPeriodEnd,
+  billingPrice,
+  subscriptionGrantsAccess,
+  type BillingInterval,
+  type PlanId,
+} from "@/lib/plans";
 import { razorpayPlanIdFor } from "@/lib/payments/plan-ids";
 import type { SessionContext } from "@/lib/session";
 import type { Payment, Subscription } from "@/lib/types";
@@ -13,6 +20,7 @@ import {
   createOrder,
   createSubscription as createRazorpaySubscription,
   fetchPayment,
+  fetchPlan,
   fetchSubscription,
   RazorpayError,
   verifyPaymentSignature,
@@ -29,13 +37,12 @@ import {
  *  - Activations are idempotent: a replayed webhook or double confirm is a no-op.
  */
 
-const PERIOD_DAYS = 30;
-
 export interface CheckoutSession {
   mode: "subscription" | "order" | "mock";
   keyId: string | null;
   plan: PlanId;
   amountInr: number;
+  billing: BillingInterval;
   providerSubscriptionId?: string | null;
   providerOrderId?: string | null;
   prefill?: { email?: string | null; name?: string | null };
@@ -70,7 +77,7 @@ export function mockCheckoutAvailable() {
 
 export async function startCheckout(
   context: SessionContext,
-  input: { plan: Exclude<PlanId, "free">; billing: "monthly" | "yearly" },
+  input: { plan: Exclude<PlanId, "free">; billing: BillingInterval },
 ): Promise<CheckoutSession> {
   if (!context.user) throw new ApiError("UNAUTHORIZED");
 
@@ -80,11 +87,38 @@ export async function startCheckout(
   }
 
   const currentPlan = context.plan;
+  const currentSubscription = await getSubscription(context);
+
+  // Never create multiple live Razorpay mandates from repeated clicks or tabs.
+  // A pending provider subscription must be completed or cancelled before a
+  // second checkout session is created for the same account.
+  if (
+    currentSubscription?.provider === "razorpay" &&
+    currentSubscription.status === "created" &&
+    currentSubscription.provider_subscription_id
+  ) {
+    throw new ApiError(
+      "CONFLICT",
+      "A payment session is already waiting for confirmation. Finish or close that checkout before starting another one.",
+    );
+  }
   if (currentPlan === input.plan) {
-    throw new ApiError("CONFLICT", `You're already on the ${plan.name} plan.`);
+    if (currentSubscription?.billing_interval === input.billing) {
+      throw new ApiError("CONFLICT", `You're already on the ${plan.name} ${input.billing} plan.`);
+    }
+    throw new ApiError(
+      "CONFLICT",
+      `Your ${plan.name} subscription is already active. Cancel it first; you can switch billing frequency when the current period ends.`,
+    );
+  }
+  if (currentPlan !== "free" && currentSubscription && subscriptionGrantsAccess(currentSubscription)) {
+    throw new ApiError(
+      "CONFLICT",
+      `Your ${PLANS[currentPlan].name} subscription is still active. Cancel it before starting ${plan.name} so you are never charged for two plans at once.`,
+    );
   }
 
-  const amountInr = input.billing === "yearly" ? priceForYear(plan.priceInr) : plan.priceInr;
+  const amountInr = billingPrice(input.plan, input.billing);
 
   // Mock/dev path — clearly separated from production payment logic.
   if (!razorpayConfigured()) {
@@ -94,6 +128,7 @@ export async function startCheckout(
         keyId: null,
         plan: input.plan,
         amountInr,
+        billing: input.billing,
         message:
           "Razorpay is not configured on this deployment. This is a development activation — no money moves.",
       };
@@ -104,55 +139,84 @@ export async function startCheckout(
     );
   }
 
-  // Recurring subscription path (preferred) when a Razorpay plan id exists.
-  const razorpayPlanId = razorpayPlanIdFor(input.plan);
-  if (razorpayPlanId) {
-    try {
-      const subscription = await createRazorpaySubscription({
-        planId: razorpayPlanId,
-        notes: { user_id: context.user.id, plan: input.plan, billing: input.billing },
-      });
-      await upsertSubscription(context, {
-        plan: "free",
-        status: "created",
-        provider: "razorpay",
-        providerSubscriptionId: subscription.id,
-        amountInr,
-      });
-      return {
-        mode: "subscription",
-        keyId: serverEnv.razorpayKeyId,
-        plan: input.plan,
-        amountInr,
-        providerSubscriptionId: subscription.id,
-        prefill: { email: context.user.email, name: context.profile?.full_name ?? null },
-      };
-    } catch (error) {
-      // Fall through to a one-time order if subscription creation is unavailable.
-      console.error("[payments] subscription create failed:", error);
-    }
+  // Paid plans are always true recurring subscriptions. We deliberately do not
+  // fall back to a one-time order because that would silently turn a monthly or
+  // yearly SaaS plan into a different product with different lifecycle rules.
+  const razorpayPlanId = razorpayPlanIdFor(input.plan, input.billing);
+  if (!razorpayPlanId) {
+    throw new ApiError(
+      "NOT_CONFIGURED",
+      `The Razorpay ${plan.name} ${input.billing} plan is not configured yet. No payment was started.`,
+      { plan: input.plan, billing: input.billing },
+    );
   }
 
-  const receipt = `starvia_${input.plan}_${Date.now().toString(36)}`;
-  const order = await createOrder({
-    amountInPaise: amountInr * 100,
-    receipt,
-    notes: { user_id: context.user.id, plan: input.plan, billing: input.billing },
-  });
+  try {
+    // Validate the provider-side plan before creating a customer mandate.
+    // This prevents an env-var mix-up (for example, a monthly plan id in the
+    // yearly slot) from silently charging the wrong cadence or amount.
+    const providerPlan = await fetchPlan(razorpayPlanId);
+    const expectedPeriod = input.billing === "yearly" ? "yearly" : "monthly";
+    const expectedPaise = amountInr * 100;
+    if (
+      providerPlan.period !== expectedPeriod ||
+      providerPlan.interval !== 1 ||
+      providerPlan.item?.active === false ||
+      providerPlan.item?.amount !== expectedPaise ||
+      (providerPlan.item?.currency && providerPlan.item.currency !== "INR")
+    ) {
+      console.error("[payments] Razorpay plan mismatch", {
+        planId: razorpayPlanId,
+        expectedPeriod,
+        expectedPaise,
+        actualPeriod: providerPlan.period,
+        actualInterval: providerPlan.interval,
+        actualAmount: providerPlan.item?.amount,
+        actualCurrency: providerPlan.item?.currency,
+      });
+      throw new ApiError(
+        "NOT_CONFIGURED",
+        `The configured Razorpay ${plan.name} ${input.billing} plan does not match Starvia's price or billing cycle. No payment was started.`,
+      );
+    }
 
-  return {
-    mode: "order",
-    keyId: serverEnv.razorpayKeyId,
-    plan: input.plan,
-    amountInr,
-    providerOrderId: order.id,
-    prefill: { email: context.user.email, name: context.profile?.full_name ?? null },
-  };
-}
-
-function priceForYear(monthlyInr: number) {
-  // Two months free on annual (₹99 → ₹990, i.e. ₹82.5/month effective).
-  return monthlyInr * 10;
+    const subscription = await createRazorpaySubscription({
+      planId: razorpayPlanId,
+      totalCount: input.billing === "yearly" ? 100 : 1200,
+      notes: { user_id: context.user.id, plan: input.plan, billing: input.billing },
+    });
+    await upsertSubscription(context, {
+      plan: "free",
+      status: "created",
+      provider: "razorpay",
+      providerSubscriptionId: subscription.id,
+      providerPlanId: razorpayPlanId,
+      billingInterval: input.billing,
+      amountInr,
+    });
+    return {
+      mode: "subscription",
+      keyId: serverEnv.razorpayKeyId,
+      plan: input.plan,
+      amountInr,
+      billing: input.billing,
+      providerSubscriptionId: subscription.id,
+      prefill: { email: context.user.email, name: context.profile?.full_name ?? null },
+    };
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    console.error("[payments] subscription create failed:", error);
+    if (error instanceof RazorpayError && error.status >= 400 && error.status < 500) {
+      throw new ApiError(
+        "SERVER_ERROR",
+        "The payment provider rejected this subscription setup. Please try again or contact support.",
+      );
+    }
+    throw new ApiError(
+      "SERVER_ERROR",
+      "The payment provider is temporarily unavailable. Please try again in a moment.",
+    );
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -166,7 +230,7 @@ export async function confirmOrderPayment(
     orderId: string;
     paymentId: string;
     signature: string;
-    billing?: "monthly" | "yearly";
+    billing: BillingInterval;
   },
 ) {
   if (!context.user) throw new ApiError("UNAUTHORIZED");
@@ -192,8 +256,7 @@ export async function confirmOrderPayment(
   // Defence in depth: confirm with Razorpay that the payment really was captured
   // and that the amount matches this plan.
   const payment = await fetchPayment(input.paymentId);
-  const expectedPaise =
-    (input.billing === "yearly" ? priceForYear(PLANS[input.plan].priceInr) : PLANS[input.plan].priceInr) * 100;
+  const expectedPaise = billingPrice(input.plan, input.billing) * 100;
 
   if (payment.status !== "captured" && payment.status !== "authorized") {
     throw new ApiError("BAD_REQUEST", "That payment was not completed. No plan was changed.");
@@ -208,6 +271,7 @@ export async function confirmOrderPayment(
     providerPaymentId: input.paymentId,
     amountInr: Math.round(payment.amount / 100),
     paymentOrderId: input.orderId,
+    billingInterval: input.billing,
     status: "captured",
   });
 
@@ -234,10 +298,41 @@ export async function confirmSubscriptionPayment(
     throw new ApiError("BAD_REQUEST", "We couldn't verify that payment. No plan was changed.");
   }
 
+  const pending = context.subscription;
+  if (!pending?.provider_subscription_id || pending.provider_subscription_id !== input.subscriptionId) {
+    throw new ApiError("FORBIDDEN", "That payment session does not belong to this account.");
+  }
+
   const subscription = await fetchSubscription(input.subscriptionId);
-  const planId = planFromNotes(subscription.notes) ?? planFromSubscription(context);
-  if (!planId || planId === "free") {
-    throw new ApiError("BAD_REQUEST", "We couldn't match that subscription to a plan.");
+  const planId = planFromNotes(subscription.notes);
+  const billing = billingFromNotes(subscription.notes);
+  if (!planId || !billing) {
+    throw new ApiError("BAD_REQUEST", "We couldn't match that subscription to a valid Starvia plan.");
+  }
+
+  if (
+    subscription.notes?.user_id !== context.user.id ||
+    (pending.provider_plan_id && subscription.plan_id && pending.provider_plan_id !== subscription.plan_id) ||
+    (pending.billing_interval && pending.billing_interval !== billing)
+  ) {
+    throw new ApiError("FORBIDDEN", "The payment session no longer matches this account or plan.");
+  }
+
+  if (!["created", "authenticated", "active"].includes(subscription.status)) {
+    throw new ApiError("BAD_REQUEST", "That subscription is no longer payable. Start a new checkout.");
+  }
+
+  const payment = await fetchPayment(input.paymentId);
+  if (payment.subscription_id && payment.subscription_id !== input.subscriptionId) {
+    throw new ApiError("FORBIDDEN", "That payment does not belong to this subscription.");
+  }
+
+  const expectedPaise = billingPrice(planId, billing) * 100;
+  if (payment.status !== "captured" && payment.status !== "authorized") {
+    throw new ApiError("BAD_REQUEST", "That payment was not completed. No plan was changed.");
+  }
+  if (payment.amount !== expectedPaise) {
+    throw new ApiError("BAD_REQUEST", "The payment amount did not exactly match the selected plan. No plan was changed.");
   }
 
   await activatePlan(context, {
@@ -245,8 +340,11 @@ export async function confirmSubscriptionPayment(
     provider: "razorpay",
     providerSubscriptionId: subscription.id,
     providerPaymentId: input.paymentId,
-    amountInr: PLANS[planId].priceInr,
+    providerPlanId: subscription.plan_id,
+    billingInterval: billing,
+    amountInr: Math.round(payment.amount / 100),
     periodEnd: subscription.current_end ? new Date(subscription.current_end * 1000) : null,
+    periodStart: subscription.current_start ? new Date(subscription.current_start * 1000) : null,
     status: "captured",
   });
 
@@ -278,7 +376,8 @@ export async function mockActivate(context: SessionContext, plan: PlanId) {
   await activatePlan(context, {
     plan,
     provider: "mock",
-    periodEnd: new Date(Date.now() + PERIOD_DAYS * 86_400_000),
+    billingInterval: "monthly",
+    periodEnd: billingPeriodEnd(new Date(), "monthly"),
     amountInr: PLANS[plan].priceInr,
     status: "captured",
     isMock: true,
@@ -295,10 +394,13 @@ export async function activatePlan(
   context: SessionContext,
   input: {
     plan: PlanId;
-    provider: Subscription["provider"];
+    provider: Exclude<Subscription["provider"], "free">;
     providerSubscriptionId?: string | null;
     providerPaymentId?: string | null;
+    providerPlanId?: string | null;
+    billingInterval?: BillingInterval | null;
     amountInr: number;
+    periodStart?: Date | null;
     periodEnd?: Date | null;
     paymentOrderId?: string | null;
     status?: Payment["status"];
@@ -311,7 +413,7 @@ export async function activatePlan(
   const periodEnd =
     input.plan === "free"
       ? null
-      : (input.periodEnd ?? new Date(now.getTime() + PERIOD_DAYS * 86_400_000)).toISOString();
+      : (input.periodEnd ?? billingPeriodEnd(now, input.billingInterval ?? "monthly")).toISOString();
 
   if (context.demo) {
     const store = demoStore();
@@ -321,8 +423,10 @@ export async function activatePlan(
       status: input.plan === "free" ? "cancelled" : "active",
       provider: input.provider,
       provider_subscription_id: input.providerSubscriptionId ?? null,
+      provider_plan_id: input.providerPlanId ?? null,
       provider_payment_id: input.providerPaymentId ?? null,
-      current_period_start: now.toISOString(),
+      billing_interval: input.billingInterval ?? null,
+      current_period_start: (input.periodStart ?? now).toISOString(),
       current_period_end: periodEnd,
       cancel_at_period_end: false,
       cancelled_at: null,
@@ -352,14 +456,16 @@ export async function activatePlan(
   const client = context.admin ?? context.db;
   if (!client) throw new ApiError("SERVER_ERROR");
 
-  await upsertSubscription(context, {
+  const subscriptionId = await upsertSubscription(context, {
     plan: input.plan,
     status: input.plan === "free" ? "cancelled" : "active",
     provider: input.provider,
     providerSubscriptionId: input.providerSubscriptionId ?? null,
+    providerPlanId: input.providerPlanId ?? null,
+    billingInterval: input.billingInterval ?? (input.plan === "free" ? null : "monthly"),
     providerPaymentId: input.providerPaymentId ?? null,
     amountInr: input.amountInr,
-    periodStart: now.toISOString(),
+    periodStart: (input.periodStart ?? now).toISOString(),
     periodEnd,
   });
 
@@ -370,8 +476,9 @@ export async function activatePlan(
       status: input.status ?? "captured",
       orderId: input.paymentOrderId ?? null,
       paymentId: input.providerPaymentId ?? null,
-      subscriptionId: input.providerSubscriptionId ?? null,
+      subscriptionId,
       signatureVerified: !input.isMock,
+      provider: input.provider,
     });
   }
 
@@ -421,10 +528,12 @@ export async function cancelPlan(
   await upsertSubscription(context, {
     plan: keepUntilEnd ? (subscription.plan as PlanId) : "free",
     status: keepUntilEnd ? "active" : "cancelled",
-    provider: subscription.provider,
+    provider: subscription.provider === "mock" ? "mock" : "razorpay",
     providerSubscriptionId,
     providerPaymentId: subscription.provider_payment_id,
     amountInr: subscription.amount_inr ?? 0,
+    billingInterval: (subscription.billing_interval as BillingInterval | null) ?? "monthly",
+    providerPlanId: subscription.provider_plan_id,
     periodStart: subscription.current_period_start,
     periodEnd: keepUntilEnd ? subscription.current_period_end : now.toISOString(),
     cancelAtPeriodEnd: Boolean(keepUntilEnd),
@@ -442,6 +551,8 @@ async function upsertSubscription(
     provider: Subscription["provider"];
     providerSubscriptionId?: string | null;
     providerPaymentId?: string | null;
+    providerPlanId?: string | null;
+    billingInterval?: BillingInterval | null;
     amountInr: number;
     periodStart?: string | null;
     periodEnd?: string | null;
@@ -460,6 +571,8 @@ async function upsertSubscription(
     provider: input.provider,
     provider_subscription_id: input.providerSubscriptionId ?? null,
     provider_payment_id: input.providerPaymentId ?? null,
+    provider_plan_id: input.providerPlanId ?? null,
+    billing_interval: input.billingInterval ?? null,
     amount_inr: input.amountInr,
     current_period_start: input.periodStart ?? null,
     current_period_end: input.periodEnd ?? null,
@@ -468,14 +581,17 @@ async function upsertSubscription(
     currency: "INR",
   };
 
-  const { error } = await client
+  const { data, error } = await client
     .from("subscriptions")
-    .upsert(payload, { onConflict: "user_id" });
+    .upsert(payload, { onConflict: "user_id" })
+    .select("id")
+    .single();
 
-  if (error) {
-    console.error("[payments] upsertSubscription:", error.message);
+  if (error || !data) {
+    console.error("[payments] upsertSubscription:", error?.message);
     throw new ApiError("SERVER_ERROR", "Could not update your subscription. Please contact support.");
   }
+  return data.id as string;
 }
 
 async function recordPayment(
@@ -488,6 +604,7 @@ async function recordPayment(
     paymentId: string | null;
     subscriptionId?: string | null;
     signatureVerified: boolean;
+    provider?: "razorpay" | "mock";
   },
 ) {
   if (!context.user) return;
@@ -499,7 +616,7 @@ async function recordPayment(
     amount_inr: input.amountInr,
     currency: "INR",
     status: input.status,
-    provider: "razorpay" as const,
+    provider: input.provider ?? "razorpay",
     order_id: input.orderId,
     payment_id: input.paymentId,
     subscription_id: input.subscriptionId ?? null,
@@ -540,7 +657,14 @@ export async function handleWebhookEvent(event: {
 
   const eventName = event.event;
   const subscriptionEntity = pick(event.payload, ["subscription", "entity"]) as
-    | { id?: string; status?: string; current_end?: number; notes?: Record<string, string> }
+    | {
+        id?: string;
+        plan_id?: string;
+        status?: string;
+        current_start?: number;
+        current_end?: number;
+        notes?: Record<string, string>;
+      }
     | undefined;
 
   const paymentEntity = pick(event.payload, ["payment", "entity"]) as
@@ -564,22 +688,29 @@ export async function handleWebhookEvent(event: {
       if (!userId || !plan || plan === "free") {
         return { handled: false, action: "missing_notes", userId };
       }
+      const billing = billingFromNotes(subscriptionEntity?.notes ?? paymentEntity?.notes);
+      if (!billing) return { handled: false, action: "missing_billing_interval", userId };
       await applySubscriptionForUser(admin, userId, {
         plan,
         status: eventName === "subscription.charged" ? "active" : "authenticated",
         providerSubscriptionId: subscriptionEntity?.id ?? null,
+        providerPlanId: subscriptionEntity?.plan_id ?? null,
         providerPaymentId: paymentEntity?.id ?? null,
+        billingInterval: billing,
+        periodStart: subscriptionEntity?.current_start
+          ? new Date(subscriptionEntity.current_start * 1000).toISOString()
+          : null,
         periodEnd: subscriptionEntity?.current_end
           ? new Date(subscriptionEntity.current_end * 1000).toISOString()
           : null,
-        amountInr: plan ? PLANS[plan].priceInr : 0,
+        amountInr: billingPrice(plan, billing),
       });
       if (paymentEntity?.id && paymentEntity.status === "captured") {
         await recordPaymentForUser(admin, userId, {
           plan,
           amountInr: Math.round((paymentEntity.amount ?? 0) / 100),
           paymentId: paymentEntity.id,
-          subscriptionId: subscriptionEntity?.id ?? null,
+          providerSubscriptionId: subscriptionEntity?.id ?? null,
           orderId: paymentEntity.order_id ?? null,
         });
       }
@@ -587,12 +718,35 @@ export async function handleWebhookEvent(event: {
     }
 
     case "subscription.pending":
-    case "subscription.halted": {
+    case "subscription.halted":
+    case "subscription.paused": {
+      const userId = subscriptionEntity?.notes?.user_id ?? null;
+      if (!userId) return { handled: false, action: "missing_notes" };
+      const status = eventName === "subscription.halted"
+        ? "halted"
+        : eventName === "subscription.paused"
+          ? "paused"
+          : "pending";
+      await admin
+        .from("subscriptions")
+        .update({ status })
+        .eq("user_id", userId);
+      return { handled: true, action: eventName, userId };
+    }
+
+    case "subscription.resumed": {
       const userId = subscriptionEntity?.notes?.user_id ?? null;
       if (!userId) return { handled: false, action: "missing_notes" };
       await admin
         .from("subscriptions")
-        .update({ status: eventName === "subscription.halted" ? "halted" : "pending" })
+        .update({
+          status: "active",
+          cancel_at_period_end: false,
+          cancelled_at: null,
+          current_period_end: subscriptionEntity?.current_end
+            ? new Date(subscriptionEntity.current_end * 1000).toISOString()
+            : undefined,
+        })
         .eq("user_id", userId);
       return { handled: true, action: eventName, userId };
     }
@@ -602,16 +756,47 @@ export async function handleWebhookEvent(event: {
     case "subscription.expired": {
       const userId = subscriptionEntity?.notes?.user_id ?? null;
       if (!userId) return { handled: false, action: "missing_notes" };
-      await admin
+
+      const providerEnd = subscriptionEntity?.current_end
+        ? new Date(subscriptionEntity.current_end * 1000)
+        : null;
+      const { data: localSubscription } = await admin
         .from("subscriptions")
-        .update({
-          plan: "free",
-          status: eventName === "subscription.completed" ? "completed" : "cancelled",
-          cancelled_at: new Date().toISOString(),
-          current_period_end: new Date().toISOString(),
-          cancel_at_period_end: false,
-        })
-        .eq("user_id", userId);
+        .select("current_period_end")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const localEnd = localSubscription?.current_period_end
+        ? new Date(localSubscription.current_period_end)
+        : null;
+      const effectiveEnd = providerEnd ?? localEnd;
+      const stillActiveAtCycleEnd =
+        eventName === "subscription.cancelled" &&
+        effectiveEnd &&
+        effectiveEnd.getTime() > Date.now();
+
+      if (stillActiveAtCycleEnd) {
+        await admin
+          .from("subscriptions")
+          .update({
+            status: "cancelled",
+            cancel_at_period_end: true,
+            cancelled_at: new Date().toISOString(),
+            current_period_end: effectiveEnd.toISOString(),
+          })
+          .eq("user_id", userId);
+      } else {
+        await admin
+          .from("subscriptions")
+          .update({
+            plan: "free",
+            status: eventName === "subscription.completed" ? "completed" : "expired",
+            cancelled_at: new Date().toISOString(),
+            current_period_end: effectiveEnd?.toISOString() ?? new Date().toISOString(),
+            cancel_at_period_end: false,
+            amount_inr: null,
+          })
+          .eq("user_id", userId);
+      }
       return { handled: true, action: eventName, userId };
     }
 
@@ -625,9 +810,21 @@ export async function handleWebhookEvent(event: {
         plan,
         amountInr: Math.round((paymentEntity?.amount ?? 0) / 100),
         paymentId: paymentEntity?.id ?? null,
-        subscriptionId: paymentEntity?.subscription_id ?? null,
+        providerSubscriptionId: paymentEntity?.subscription_id ?? null,
         orderId: paymentEntity?.order_id ?? null,
       });
+      return { handled: true, action: eventName, userId };
+    }
+
+    case "payment.refunded": {
+      const userId = paymentEntity?.notes?.user_id ?? null;
+      if (paymentEntity?.id) {
+        const { error } = await admin
+          .from("payments")
+          .update({ status: "refunded" })
+          .eq("payment_id", paymentEntity.id);
+        if (error) console.error("[payments] refund webhook:", error.message);
+      }
       return { handled: true, action: eventName, userId };
     }
 
@@ -643,7 +840,7 @@ export async function handleWebhookEvent(event: {
             provider: "razorpay",
             order_id: paymentEntity.order_id ?? null,
             payment_id: paymentEntity.id,
-            subscription_id: paymentEntity.subscription_id ?? null,
+            subscription_id: null,
             signature_verified: true,
             notes: {},
           },
@@ -669,7 +866,10 @@ async function applySubscriptionForUser(
     plan: PlanId;
     status: Subscription["status"];
     providerSubscriptionId: string | null;
+    providerPlanId: string | null;
     providerPaymentId: string | null;
+    billingInterval: BillingInterval;
+    periodStart: string | null;
     periodEnd: string | null;
     amountInr: number;
   },
@@ -681,10 +881,12 @@ async function applySubscriptionForUser(
       status: input.status,
       provider: "razorpay",
       provider_subscription_id: input.providerSubscriptionId,
+      provider_plan_id: input.providerPlanId,
       provider_payment_id: input.providerPaymentId,
+      billing_interval: input.billingInterval,
       amount_inr: input.amountInr,
       currency: "INR",
-      current_period_start: new Date().toISOString(),
+      current_period_start: input.periodStart,
       current_period_end: input.periodEnd,
       cancel_at_period_end: false,
       cancelled_at: null,
@@ -701,11 +903,21 @@ async function recordPaymentForUser(
     plan: PlanId;
     amountInr: number;
     paymentId: string | null;
-    subscriptionId: string | null;
+    providerSubscriptionId: string | null;
     orderId: string | null;
   },
 ) {
-  await admin.from("payments").upsert(
+  let localSubscriptionId: string | null = null;
+  if (input.providerSubscriptionId) {
+    const { data } = await admin
+      .from("subscriptions")
+      .select("id")
+      .eq("provider_subscription_id", input.providerSubscriptionId)
+      .maybeSingle();
+    localSubscriptionId = data?.id ?? null;
+  }
+
+  const { error } = await admin.from("payments").upsert(
     {
       user_id: userId,
       amount_inr: input.amountInr,
@@ -714,12 +926,13 @@ async function recordPaymentForUser(
       provider: "razorpay",
       order_id: input.orderId,
       payment_id: input.paymentId,
-      subscription_id: input.subscriptionId,
+      subscription_id: localSubscriptionId,
       signature_verified: true,
       notes: { plan: input.plan },
     },
     { onConflict: "payment_id", ignoreDuplicates: true },
   );
+  if (error) console.error("[payments] recordPaymentForUser:", error.message);
 }
 
 function planFromNotes(notes?: Record<string, string>) {
@@ -730,6 +943,11 @@ function planFromNotes(notes?: Record<string, string>) {
 function planFromSubscription(context: SessionContext) {
   const plan = context.subscription?.plan;
   return plan === "pro" || plan === "ultra" ? (plan as PlanId) : null;
+}
+
+function billingFromNotes(notes?: Record<string, string>) {
+  const billing = notes?.billing;
+  return billing === "monthly" || billing === "yearly" ? billing : null;
 }
 
 function pick(source: Record<string, unknown> | undefined, path: string[]) {

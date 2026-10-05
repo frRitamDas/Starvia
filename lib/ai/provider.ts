@@ -63,6 +63,14 @@ export function aiConfigured() {
   }
 }
 
+export function geminiConfigured() {
+  try {
+    return Boolean(serverEnv.geminiApiKey);
+  } catch {
+    return false;
+  }
+}
+
 function endpoint(model: string, stream: boolean) {
   const method = stream ? "streamGenerateContent" : "generateContent";
   const query = stream ? "?alt=sse" : "";
@@ -130,16 +138,23 @@ async function requestWithRetry(
   init: RequestInit,
   timeoutMs: number,
   attempts = 3,
+  upstreamSignal?: AbortSignal,
 ): Promise<Response> {
   let lastError: unknown;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const abortUpstream = () => controller.abort();
+    if (upstreamSignal) {
+      if (upstreamSignal.aborted) controller.abort();
+      else upstreamSignal.addEventListener("abort", abortUpstream, { once: true });
+    }
     try {
       const response = await fetch(url, { ...init, signal: controller.signal });
       clearTimeout(timer);
+      upstreamSignal?.removeEventListener("abort", abortUpstream);
       if (response.status === 429 || response.status >= 500) {
-        if (attempt < attempts - 1) {
+        if (attempt < attempts - 1 && !upstreamSignal?.aborted) {
           await sleep(500 * Math.pow(2, attempt));
           continue;
         }
@@ -147,8 +162,12 @@ async function requestWithRetry(
       return response;
     } catch (error) {
       clearTimeout(timer);
+      upstreamSignal?.removeEventListener("abort", abortUpstream);
       lastError = error;
       const aborted = error instanceof Error && error.name === "AbortError";
+      if (upstreamSignal?.aborted) {
+        throw new AiError("unavailable", "The response was cancelled before it finished.");
+      }
       if (attempt < attempts - 1) {
         await sleep(aborted ? 200 : 600 * Math.pow(2, attempt));
         continue;
@@ -169,9 +188,9 @@ function sleep(ms: number) {
 }
 
 /** Non-streaming generation. Returns plain text plus token accounting. */
-async function generateTextGemini(options: GenerateOptions): Promise<GenerateResult> {
-  if (!aiConfigured()) {
-    throw new AiError("not_configured", "AI is not configured for this deployment yet.");
+export async function generateTextGemini(options: GenerateOptions): Promise<GenerateResult> {
+  if (!geminiConfigured()) {
+    throw new AiError("not_configured", "Gemini is not configured for this deployment.");
   }
   const model = resolveModel(options.model);
   const started = Date.now();
@@ -187,6 +206,8 @@ async function generateTextGemini(options: GenerateOptions): Promise<GenerateRes
       cache: "no-store",
     },
     options.timeoutMs ?? serverEnv.aiTimeoutMs,
+    3,
+    options.signal,
   );
 
   const raw = await response.text();
@@ -266,8 +287,8 @@ export async function generateText(options: GenerateOptions): Promise<GenerateRe
 async function* streamGeminiText(
   options: GenerateOptions,
 ): AsyncGenerator<StreamChunk, StreamResult, void> {
-  if (!aiConfigured()) {
-    throw new AiError("not_configured", "AI is not configured for this deployment yet.");
+  if (!geminiConfigured()) {
+    throw new AiError("not_configured", "Gemini is not configured for this deployment.");
   }
   const model = resolveModel(options.model);
   const started = Date.now();
@@ -285,6 +306,7 @@ async function* streamGeminiText(
     },
     options.timeoutMs ?? serverEnv.aiTimeoutMs,
     2,
+    options.signal,
   );
 
   if (!response.ok || !response.body) {
@@ -294,6 +316,15 @@ async function* streamGeminiText(
   }
 
   const reader = response.body.getReader();
+  let streamAborted = false;
+  const abortUpstream = () => {
+    streamAborted = true;
+    void reader.cancel().catch(() => undefined);
+  };
+  if (options.signal) {
+    if (options.signal.aborted) abortUpstream();
+    else options.signal.addEventListener("abort", abortUpstream, { once: true });
+  }
   const decoder = new TextDecoder();
   let buffer = "";
   let promptTokens = 0;
@@ -301,9 +332,13 @@ async function* streamGeminiText(
   let totalTokens = 0;
   let sawText = false;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (streamAborted || options.signal?.aborted) {
+        throw new AiError("unavailable", "The response was cancelled before it finished.");
+      }
+      if (done) break;
     buffer += decoder.decode(value, { stream: true });
 
     // SSE events are separated by a blank line.
@@ -342,17 +377,20 @@ async function* streamGeminiText(
     }
   }
 
-  if (!sawText) {
-    throw new AiError("bad_response", "AI didn't return an answer. Please try again.");
-  }
+    if (!sawText) {
+      throw new AiError("bad_response", "AI didn't return an answer. Please try again.");
+    }
 
-  return {
-    model,
-    totalTokens,
-    promptTokens,
-    completionTokens,
-    latencyMs: Date.now() - started,
-  };
+    return {
+      model,
+      totalTokens,
+      promptTokens,
+      completionTokens,
+      latencyMs: Date.now() - started,
+    };
+  } finally {
+    options.signal?.removeEventListener("abort", abortUpstream);
+  }
 }
 
 export async function* streamText(

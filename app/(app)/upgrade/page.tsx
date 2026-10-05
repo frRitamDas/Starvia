@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSubscription, mockCheckoutAvailable, paymentsAvailable } from "@/lib/payments/service";
-import { AI_FEATURES, FEATURE_LABELS, PLANS, PLAN_ORDER } from "@/lib/plans";
+import { razorpayRecurringPlanStatus } from "@/lib/env";
+import { AI_FEATURES, FEATURE_LABELS, PLANS, PLAN_ORDER, type BillingInterval } from "@/lib/plans";
 import { requireOnboarded } from "@/lib/session";
 import { getUsageSummary } from "@/lib/usage";
 import { formatDate } from "@/lib/utils";
@@ -45,6 +46,8 @@ export default async function UpgradePage() {
   }
 
   const periodEnd = subscription?.current_period_end ?? null;
+  const billingInterval = (subscription?.billing_interval as BillingInterval | null) ?? null;
+  const recurringPlans = razorpayRecurringPlanStatus();
 
   return (
     <div className="space-y-8">
@@ -66,6 +69,7 @@ export default async function UpgradePage() {
           currentPlan={context.plan}
           paymentsAvailable={paymentsAvailable()}
           mockAvailable={mockCheckoutAvailable()}
+          recurringPlans={recurringPlans}
           signedIn
         />
       </section>
@@ -127,12 +131,12 @@ export default async function UpgradePage() {
                 ))}
               </tr>
               <tr className="border-t border-border/60">
-                <td className="px-4 py-2.5">Price (yearly, per month)</td>
+                <td className="px-4 py-2.5">Price (annual billing)</td>
                 {PLAN_ORDER.map((planId) => (
                   <td key={planId} className="px-4 py-2.5">
                     {PLANS[planId].priceInr === 0
                       ? "Free"
-                      : `₹${PLANS[planId].yearlyPriceInr}/mo`}
+                      : `₹${PLANS[planId].yearlyPriceInr}/year`}
                   </td>
                 ))}
               </tr>
@@ -176,6 +180,7 @@ export default async function UpgradePage() {
         currentPlan={context.plan}
         status={subscription?.status ?? null}
         periodEnd={periodEnd}
+        billingInterval={billingInterval}
         payments={payments}
         mockAvailable={mockCheckoutAvailable()}
       />

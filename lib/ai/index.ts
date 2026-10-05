@@ -53,6 +53,7 @@ export interface TutorRequest {
   history: TutorTurn[];
   message: string;
   regenerate?: boolean;
+  signal?: AbortSignal;
 }
 
 /** Builds the Gemini conversation for the tutor. Keeps only useful history (cost control). */
@@ -87,6 +88,7 @@ export async function* generateTutorResponse(
     temperature: 0.65,
     maxOutputTokens: 2048,
     label: "tutor",
+    signal: request.signal,
   });
 
   let full = "";

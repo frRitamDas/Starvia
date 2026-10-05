@@ -29,7 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { apiFetch, ApiClientError } from "@/lib/client/api";
-import { AI_FEATURES, FEATURE_LABELS, PLANS, PLAN_ORDER, type PlanId } from "@/lib/plans";
+import { AI_FEATURES, FEATURE_LABELS, PLANS, PLAN_ORDER, billingPrice, type BillingInterval, type PlanId } from "@/lib/plans";
 import { cn, formatDate, formatPrice } from "@/lib/utils";
 
 /* ------------------------- Razorpay script loading ------------------------ */
@@ -100,14 +100,21 @@ export function PlanGrid({
   paymentsAvailable,
   mockAvailable,
   signedIn,
+  recurringPlans,
 }: {
   currentPlan: PlanId;
   paymentsAvailable: boolean;
   mockAvailable: boolean;
   signedIn: boolean;
+  recurringPlans: {
+    proMonthly: boolean;
+    proYearly: boolean;
+    ultraMonthly: boolean;
+    ultraYearly: boolean;
+  };
 }) {
   const router = useRouter();
-  const [billing, setBilling] = React.useState<"monthly" | "yearly">("monthly");
+  const [billing, setBilling] = React.useState<BillingInterval>("monthly");
   const [busy, setBusy] = React.useState<PlanId | null>(null);
 
   async function verifyPayment(
@@ -159,6 +166,7 @@ export function PlanGrid({
           keyId: string | null;
           plan: PlanId;
           amountInr: number;
+          billing: BillingInterval;
           providerSubscriptionId?: string | null;
           providerOrderId?: string | null;
           prefill?: { email?: string | null; name?: string | null };
@@ -191,7 +199,7 @@ export function PlanGrid({
         key: checkout.keyId,
         currency: "INR",
         name: "Starvia",
-        description: `${PLANS[plan].name} · ${billing === "yearly" ? "yearly" : "monthly"}`,
+        description: `${PLANS[plan].name} · ${billing === "yearly" ? "annual" : "monthly"} subscription`,
         prefill: checkout.prefill,
         notes: { plan },
         theme: { color: "#6366f1" },
@@ -242,7 +250,16 @@ export function PlanGrid({
         {PLAN_ORDER.map((planId) => {
           const plan = PLANS[planId];
           const active = planId === currentPlan;
-          const monthlyPrice = billing === "yearly" ? plan.yearlyPriceInr ?? plan.priceInr : plan.priceInr;
+          const recurringConfigured =
+            planId === "free" ||
+            (planId === "pro"
+              ? billing === "yearly"
+                ? recurringPlans.proYearly
+                : recurringPlans.proMonthly
+              : billing === "yearly"
+                ? recurringPlans.ultraYearly
+                : recurringPlans.ultraMonthly);
+          const price = billingPrice(plan.id, billing);
           const limits = limitSummary(planId);
 
           return (
@@ -266,15 +283,19 @@ export function PlanGrid({
                 </CardTitle>
                 <p className="text-[12.5px] text-muted-foreground">{plan.tagline}</p>
                 <p className="pt-1 font-display text-2xl font-semibold">
-                  {plan.priceInr === 0 ? "Free" : formatPrice(monthlyPrice ?? plan.priceInr)}
+                  {plan.priceInr === 0 ? "Free" : formatPrice(billing === "yearly" ? price : plan.priceInr)}
                   {plan.priceInr > 0 ? (
-                    <span className="text-[12.5px] font-normal text-muted-foreground">/month</span>
+                    <span className="text-[12.5px] font-normal text-muted-foreground">
+                      /{billing === "yearly" ? "year" : "month"}
+                    </span>
                   ) : null}
                 </p>
                 {plan.priceInr > 0 && billing === "yearly" ? (
                   <p className="text-[11.5px] text-muted-foreground">
-                    Billed yearly as {formatPrice((monthlyPrice ?? plan.priceInr) * 12)}
+                    {formatPrice(price / 12)} / month effective · billed {formatPrice(price)} yearly
                   </p>
+                ) : plan.priceInr > 0 ? (
+                  <p className="text-[11.5px] text-muted-foreground">Renews monthly until cancelled</p>
                 ) : null}
               </CardHeader>
 
@@ -297,7 +318,7 @@ export function PlanGrid({
                 ) : (
                   <Button
                     variant={plan.marketing.badge ? "gradient" : "default"}
-                    disabled={active || busy !== null}
+                    disabled={active || busy !== null || !recurringConfigured}
                     onClick={() => upgrade(planId)}
                   >
                     {busy === planId ? (
@@ -305,7 +326,11 @@ export function PlanGrid({
                     ) : (
                       <Sparkles className="size-4" />
                     )}
-                    {active ? "Current plan" : `Upgrade to ${plan.name}`}
+                    {active
+                      ? "Current plan"
+                      : !recurringConfigured
+                        ? (billing === "yearly" ? "Yearly billing not configured" : "Monthly billing not configured")
+                        : `Upgrade to ${plan.name}`}
                   </Button>
                 )}
               </CardContent>
@@ -314,6 +339,18 @@ export function PlanGrid({
         })}
       </div>
 
+      {paymentsAvailable &&
+      ((billing === "yearly" && (!recurringPlans.proYearly || !recurringPlans.ultraYearly)) ||
+        (billing === "monthly" && (!recurringPlans.proMonthly || !recurringPlans.ultraMonthly))) ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-warning/30 bg-warning/[0.06] p-4 text-[12.5px]">
+          <AlertTriangle className="size-4 shrink-0 text-warning" />
+          <p className="min-w-0 flex-1">
+            {billing === "yearly"
+              ? "Annual checkout is not fully configured yet. Configure the Pro and Ultra yearly Razorpay plans before accepting annual subscriptions."
+              : "Monthly checkout is not fully configured yet. Configure the Pro and Ultra monthly Razorpay plans before accepting monthly subscriptions."}
+          </p>
+        </div>
+      ) : null}
       {!paymentsAvailable ? (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-warning/30 bg-warning/[0.06] p-4 text-[12.5px]">
           <AlertTriangle className="size-4 shrink-0 text-warning" />
@@ -339,12 +376,14 @@ export function BillingPanel({
   currentPlan,
   status,
   periodEnd,
+  billingInterval,
   payments,
   mockAvailable,
 }: {
   currentPlan: PlanId;
   status: string | null;
   periodEnd: string | null;
+  billingInterval: BillingInterval | null;
   payments: {
     id: string;
     amount_inr: number;
@@ -409,7 +448,7 @@ export function BillingPanel({
               {currentPlan === "free"
                 ? "Free forever — upgrade any time for a bigger daily AI allowance."
                 : periodEnd
-                  ? `Renews on ${formatDate(periodEnd)} · cancel any time.`
+                  ? `Renews ${billingInterval === "yearly" ? "yearly" : "monthly"} on ${formatDate(periodEnd)} · cancel any time.`
                   : "Active subscription"}
             </p>
           </div>
@@ -426,7 +465,7 @@ export function BillingPanel({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Cancel your {PLANS[currentPlan].name} plan?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    You&apos;ll keep every Pro feature until the end of the period you already paid for.
+                    You&apos;ll keep your paid features until the end of the period you already paid for.
                     After that your account returns to the free plan — no further charges.
                   </AlertDialogDescription>
                 </AlertDialogHeader>

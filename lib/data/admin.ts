@@ -1,6 +1,7 @@
 import "server-only";
 
 import { demoStore } from "@/lib/demo/store";
+import { AI_FEATURES } from "@/lib/plans";
 import type { SessionContext } from "@/lib/session";
 
 /** Aggregated platform metrics for /admin. All reads use the service role. */
@@ -84,6 +85,7 @@ export async function getAdminStats(context: SessionContext): Promise<AdminStats
     client
       .from("ai_events")
       .select("feature, status, latency_ms, tokens_used, created_at")
+      .in("feature", [...AI_FEATURES])
       .gte("created_at", thirtyDaysAgo)
       .limit(5000),
     client.from("quizzes").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
@@ -101,9 +103,12 @@ export async function getAdminStats(context: SessionContext): Promise<AdminStats
     status: string;
     current_period_end: string | null;
   }[];
-  const activeSubscriptions = subscriptionRows.filter(
-    (row) => row.status === "active" && (!row.current_period_end || new Date(row.current_period_end) > new Date()),
-  );
+  const now = Date.now();
+  const activeSubscriptions = subscriptionRows.filter((row) => {
+    if (!["pro", "ultra"].includes(row.plan)) return false;
+    if (!["active", "cancelled"].includes(row.status)) return false;
+    return !row.current_period_end || new Date(row.current_period_end).getTime() > now;
+  });
 
   const planCounts = { free: 0, pro: 0, ultra: 0 };
   for (const row of activeSubscriptions) {

@@ -88,8 +88,10 @@ create table if not exists public.subscriptions (
                                               'paused','cancelled','completed','expired')),
   provider                text not null default 'free' check (provider in ('free','razorpay','mock')),
   provider_subscription_id text,
+  provider_plan_id        text,
   provider_payment_id     text,
   provider_customer_id    text,
+  billing_interval        text check (billing_interval is null or billing_interval in ('monthly','yearly')),
   current_period_start    timestamptz,
   current_period_end      timestamptz,
   cancel_at_period_end    boolean not null default false,
@@ -104,6 +106,10 @@ create index if not exists subscriptions_plan_idx on public.subscriptions (plan)
 create index if not exists subscriptions_status_idx on public.subscriptions (status);
 create index if not exists subscriptions_provider_sub_idx
   on public.subscriptions (provider_subscription_id);
+create index if not exists subscriptions_provider_plan_idx
+  on public.subscriptions (provider_plan_id);
+create index if not exists subscriptions_period_end_idx
+  on public.subscriptions (current_period_end);
 
 drop trigger if exists subscriptions_updated_at on public.subscriptions;
 create trigger subscriptions_updated_at before update on public.subscriptions
