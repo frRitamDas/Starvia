@@ -187,7 +187,6 @@ export const PLANS: Record<PlanId, Plan> = {
 };
 
 export const PLAN_ORDER: PlanId[] = ["free", "pro", "ultra"];
-export const PAID_PLAN_ORDER: PlanId[] = ["pro", "ultra"];
 
 export function billingPrice(planId: PlanId, billing: BillingInterval): number {
   const plan = getPlan(planId);
