@@ -8,6 +8,7 @@ import {
 import { AiError } from "@/lib/ai/types";
 import type {
   AiContent,
+  AiRole,
   GenerateOptions,
   GenerateResult,
   ModelAlias,
@@ -33,6 +34,7 @@ export {
 } from "@/lib/ai/types";
 export type {
   AiContent,
+  AiRole,
   GenerateOptions,
   GenerateResult,
   ModelAlias,
@@ -255,18 +257,6 @@ export async function generateText(options: GenerateOptions): Promise<GenerateRe
   }
 
   throw new AiError("not_configured", "No compatible AI provider is configured for this request.");
-}
-
-export interface StreamChunk {
-  text: string;
-}
-
-export interface StreamResult {
-  model: string;
-  totalTokens: number;
-  promptTokens: number;
-  completionTokens: number;
-  latencyMs: number;
 }
 
 /**
