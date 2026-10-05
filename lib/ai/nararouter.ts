@@ -1,13 +1,13 @@
 import { serverEnv } from "@/lib/env";
-import {
-  AiError,
-  type AiContent,
-  type GenerateOptions,
-  type GenerateResult,
-  type ModelAlias,
-  type StreamChunk,
-  type StreamResult,
-} from "@/lib/ai/provider-types";
+import { AiError } from "@/lib/ai/provider";
+import type {
+  AiContent,
+  GenerateOptions,
+  GenerateResult,
+  ModelAlias,
+  StreamChunk,
+  StreamResult,
+} from "@/lib/ai/provider";
 
 /**
  * NaraRouter adapter.
