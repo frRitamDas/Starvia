@@ -48,7 +48,7 @@ export default async function AdminPage() {
     { icon: Users, label: "Total users", value: totals.users, hint: `${totals.onboarded} onboarded` },
     { icon: Activity, label: "Active today", value: totals.activeToday, hint: `${totals.activeWeek} this week` },
     { icon: TrendingUp, label: "Paid subscribers", value: paidUsers, hint: `${conversion}% conversion` },
-    { icon: ShieldCheck, label: "MRR (this month)", value: formatPrice(revenue.thisMonthInr), hint: `${revenue.payments} payments` },
+    { icon: ShieldCheck, label: "Revenue this month", value: formatPrice(revenue.thisMonthInr), hint: `${revenue.payments} captured payments` },
   ];
 
   return (
