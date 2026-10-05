@@ -138,16 +138,23 @@ async function requestWithRetry(
   init: RequestInit,
   timeoutMs: number,
   attempts = 3,
+  upstreamSignal?: AbortSignal,
 ): Promise<Response> {
   let lastError: unknown;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const abortUpstream = () => controller.abort();
+    if (upstreamSignal) {
+      if (upstreamSignal.aborted) controller.abort();
+      else upstreamSignal.addEventListener("abort", abortUpstream, { once: true });
+    }
     try {
       const response = await fetch(url, { ...init, signal: controller.signal });
       clearTimeout(timer);
+      upstreamSignal?.removeEventListener("abort", abortUpstream);
       if (response.status === 429 || response.status >= 500) {
-        if (attempt < attempts - 1) {
+        if (attempt < attempts - 1 && !upstreamSignal?.aborted) {
           await sleep(500 * Math.pow(2, attempt));
           continue;
         }
@@ -155,8 +162,12 @@ async function requestWithRetry(
       return response;
     } catch (error) {
       clearTimeout(timer);
+      upstreamSignal?.removeEventListener("abort", abortUpstream);
       lastError = error;
       const aborted = error instanceof Error && error.name === "AbortError";
+      if (upstreamSignal?.aborted) {
+        throw new AiError("unavailable", "The response was cancelled before it finished.");
+      }
       if (attempt < attempts - 1) {
         await sleep(aborted ? 200 : 600 * Math.pow(2, attempt));
         continue;
@@ -195,6 +206,8 @@ export async function generateTextGemini(options: GenerateOptions): Promise<Gene
       cache: "no-store",
     },
     options.timeoutMs ?? serverEnv.aiTimeoutMs,
+    3,
+    options.signal,
   );
 
   const raw = await response.text();
@@ -293,6 +306,7 @@ async function* streamGeminiText(
     },
     options.timeoutMs ?? serverEnv.aiTimeoutMs,
     2,
+    options.signal,
   );
 
   if (!response.ok || !response.body) {
