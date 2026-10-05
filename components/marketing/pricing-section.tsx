@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AI_FEATURES, FEATURE_LABELS, PLAN_ORDER, PLANS, type PlanId } from "@/lib/plans";
+import { AI_FEATURES, FEATURE_LABELS, PLAN_ORDER, PLANS, billingPrice, type BillingInterval, type PlanId } from "@/lib/plans";
 import { cn, formatPrice } from "@/lib/utils";
 
 /**
@@ -24,7 +24,7 @@ export function PricingSection({
   signedIn?: boolean;
   className?: string;
 }) {
-  const [billing, setBilling] = React.useState<"monthly" | "yearly">("monthly");
+  const [billing, setBilling] = React.useState<BillingInterval>("monthly");
 
   return (
     <div className={cn("space-y-10", className)}>
@@ -45,8 +45,7 @@ export function PricingSection({
           const plan = PLANS[planId];
           const isCurrent = currentPlan === planId;
           const isFree = plan.priceInr === 0;
-          const price =
-            billing === "yearly" && plan.yearlyPriceInr ? plan.yearlyPriceInr : plan.priceInr;
+          const price = billingPrice(plan.id, billing);
 
           return (
             <Card
@@ -72,17 +71,21 @@ export function PricingSection({
 
               <div className="mt-5 flex items-end gap-1.5">
                 <span className="font-display text-4xl font-semibold tracking-tight">
-                  {isFree ? "Free" : formatPrice(price)}
+                  {isFree ? "Free" : formatPrice(billing === "yearly" ? price : plan.priceInr)}
                 </span>
-                {!isFree && <span className="pb-1.5 text-sm text-muted-foreground">/month</span>}
+                {!isFree ? (
+                  <span className="pb-1.5 text-sm text-muted-foreground">
+                    /{billing === "yearly" ? "year" : "month"}
+                  </span>
+                ) : null}
               </div>
               {billing === "yearly" && !isFree ? (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Billed {formatPrice(plan.priceInr * 10)} yearly
+                  {formatPrice(price / 12)} / month effective · billed {formatPrice(price)} yearly
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {isFree ? "Free forever · no card needed" : "Billed monthly"}
+                  {isFree ? "Free forever · no card needed" : "Renews monthly until cancelled"}
                 </p>
               )}
 
