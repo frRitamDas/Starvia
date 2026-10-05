@@ -1,128 +1,15 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import type { AuthState } from "@/app/(auth)/actions";
-
-export interface AuthField {
-  name: string;
-  label: string;
-  type?: string;
-  placeholder?: string;
-  autoComplete?: string;
-  required?: boolean;
-  minLength?: number;
-  hint?: string;
-}
-
-function SubmitButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={pending}>
-      {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-      {pending ? "Please wait…" : label}
-    </Button>
-  );
-}
-
-export function AuthForm({
-  action,
-  fields,
-  submitLabel,
-  hidden,
-  notice,
-  footer,
-}: {
-  action: (state: AuthState, formData: FormData) => Promise<AuthState>;
-  fields: AuthField[];
-  submitLabel: string;
-  hidden?: Record<string, string>;
-  notice?: string;
-  footer?: React.ReactNode;
-}) {
-  const [state, formAction] = useActionState(action, {} as AuthState);
-
-  return (
-    <form action={formAction} className="space-y-4" noValidate>
-      {hidden
-        ? Object.entries(hidden).map(([name, value]) => (
-            <input key={name} type="hidden" name={name} value={value} />
-          ))
-        : null}
-
-      {notice ? (
-        <Alert variant="info">
-          <AlertDescription className="text-foreground/90">{notice}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {state?.error ? (
-        <Alert variant="destructive">
-          <AlertCircle className="size-4" />
-          <AlertDescription className="text-foreground">{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {state?.message ? (
-        <Alert variant="success">
-          <CheckCircle2 className="size-4" />
-          <AlertDescription className="text-foreground">{state.message}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {fields.map((field) => (
-        <div key={field.name} className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor={field.name}>{field.label}</Label>
-            {field.hint ? <span className="text-xs text-muted-foreground">{field.hint}</span> : null}
-          </div>
-          <Input
-            id={field.name}
-            name={field.name}
-            type={field.type ?? "text"}
-            placeholder={field.placeholder}
-            autoComplete={field.autoComplete}
-            required={field.required}
-            minLength={field.minLength}
-          />
-        </div>
-      ))}
-
-      <SubmitButton label={submitLabel} />
-
-      {footer ? <div className="pt-1 text-center text-sm text-muted-foreground">{footer}</div> : null}
-    </form>
-  );
-}
-
-export function AuthDivider({ label = "or" }: { label?: string }) {
-  return (
-    <div className="relative my-5">
-      <div className="absolute inset-0 flex items-center">
-        <span className="w-full border-t border-border/70" />
-      </div>
-      <div className="relative flex justify-center">
-        <span className="bg-card px-3 text-xs uppercase tracking-wide text-muted-foreground">
-          {label}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 export function GoogleButton({ next }: { next?: string }) {
   const href = next ? `/api/auth/google?next=${encodeURIComponent(next)}` : "/api/auth/google";
   return (
     <Button asChild variant="outline" size="lg" className="w-full gap-2.5">
-      <a href={href}>
+      <a href={href} aria-label="Continue with Google">
         <GoogleGlyph />
         Continue with Google
       </a>
@@ -150,7 +37,7 @@ function GoogleGlyph() {
   );
 }
 
-export function AuthLink({ href, children }: { href: string; children: React.ReactNode }) {
+export function AuthLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link href={href} className="font-medium text-primary underline-offset-4 hover:underline">
       {children}
