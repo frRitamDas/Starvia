@@ -183,8 +183,14 @@ export async function refundQuota(
     return { refunded, used: next, remaining: Math.max(0, limit - next) };
   }
 
-  const client = context.admin ?? context.db;
-  if (!client) return { refunded: 0, used: 0, remaining: limit };
+  // Refunds are deliberately server-admin-only. Exposing this RPC to the
+  // authenticated role would let a client manufacture refunds and bypass
+  // daily limits.
+  const client = context.admin;
+  if (!client) {
+    console.error("[usage] quota refund unavailable: SUPABASE_SECRET_KEY is missing");
+    return { refunded: 0, used: 0, remaining: limit };
+  }
 
   const { data, error } = await client.rpc("refund_ai_quota", {
     p_user_id: context.user.id,
