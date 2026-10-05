@@ -113,7 +113,49 @@ export async function getSessionContext(): Promise<SessionContext> {
   ]);
 
   const profile = (profileRow as Profile | null) ?? null;
-  const subscription = (subscriptionRow as Subscription | null) ?? null;
+  let subscription = (subscriptionRow as Subscription | null) ?? null;
+
+  // A mock subscription is never a production entitlement. This prevents a
+  // test activation written during development from granting paid access on
+  // the live app. Expired provider subscriptions are also reconciled lazily so
+  // a missed webhook cannot leave a paid plan active forever.
+  if (subscription && subscription.provider === "mock" && process.env.NODE_ENV === "production") {
+    if (admin) {
+      await admin
+        .from("subscriptions")
+        .update({
+          plan: "free",
+          status: "expired",
+          amount_inr: null,
+          current_period_start: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          cancelled_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+    }
+    subscription = { ...subscription, plan: "free", status: "expired", amount_inr: null } as Subscription;
+  } else if (
+    subscription &&
+    subscription.plan !== "free" &&
+    subscription.current_period_end &&
+    new Date(subscription.current_period_end).getTime() <= Date.now() &&
+    !["expired", "completed"].includes(subscription.status)
+  ) {
+    if (admin) {
+      await admin
+        .from("subscriptions")
+        .update({
+          plan: "free",
+          status: "expired",
+          cancel_at_period_end: false,
+          cancelled_at: subscription.cancelled_at ?? new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+    }
+    subscription = { ...subscription, plan: "free", status: "expired" } as Subscription;
+  }
+
   const plan: PlanId =
     subscription && subscriptionGrantsAccess(subscription) ? (subscription.plan as PlanId) : "free";
 
