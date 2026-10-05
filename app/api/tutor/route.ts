@@ -175,6 +175,7 @@ export async function POST(request: Request) {
               context: studentContext,
               history,
               message: prompt,
+              signal: request.signal,
             });
 
             while (!clientGone) {
