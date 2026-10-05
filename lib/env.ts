@@ -127,6 +127,14 @@ export const naraRouterConfigured = () => Boolean(serverEnv.naraRouterApiKey);
 export const razorpayConfigured = () =>
   Boolean(serverEnv.razorpayKeyId && serverEnv.razorpayKeySecret);
 
+/** Public-safe status: booleans only, never the plan ids themselves. */
+export const razorpayRecurringPlanStatus = () => ({
+  proMonthly: Boolean(read("RAZORPAY_PLAN_PRO_MONTHLY") || read("RAZORPAY_PLAN_PRO")),
+  proYearly: Boolean(read("RAZORPAY_PLAN_PRO_YEARLY")),
+  ultraMonthly: Boolean(read("RAZORPAY_PLAN_ULTRA_MONTHLY") || read("RAZORPAY_PLAN_ULTRA")),
+  ultraYearly: Boolean(read("RAZORPAY_PLAN_ULTRA_YEARLY")),
+});
+
 /**
  * Demo mode gives a fully clickable product when no backend keys exist yet.
  * It is OFF unless explicitly requested, and it is hard-disabled in production
