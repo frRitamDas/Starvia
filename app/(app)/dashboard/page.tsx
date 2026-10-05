@@ -68,7 +68,7 @@ export default async function DashboardPage() {
   const usageFeatures: AiFeature[] = ["tutor", "tutorial", "quiz", "image"];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 stagger-enter">
       {/* Greeting */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
@@ -98,7 +98,7 @@ export default async function DashboardPage() {
           <Link
             key={action.href}
             href={action.href}
-            className="group rounded-2xl border border-border/70 bg-card p-3.5 transition-colors hover:border-primary/40 hover:bg-accent/40"
+            className="group interactive-card rounded-2xl border border-border/70 bg-card p-3.5"
           >
             <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
               <action.icon className="size-4" />
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Today's progress */}
-        <Card className="lg:col-span-2">
+        <Card className="interactive-card lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-base">Today&apos;s learning</CardTitle>
             <Badge variant="outline" className="gap-1.5">

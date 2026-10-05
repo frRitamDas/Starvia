@@ -308,10 +308,10 @@ export function TutorChat({
   }
 
   return (
-    <div className="grid min-w-0 gap-5 overflow-hidden lg:grid-cols-[260px_minmax(0,1fr)]">
+    <div className="grid min-w-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
       {/* Conversation list (desktop) */}
       <div className="hidden lg:block">
-        <Card className="flex h-[calc(100dvh-13rem)] flex-col p-3">
+        <Card className="interactive-card flex h-[calc(100dvh-13rem)] flex-col p-3">
           <Button variant="gradient" size="sm" className="w-full" onClick={startNewChat}>
             <MessageSquarePlus className="size-4" />
             New chat
@@ -421,7 +421,7 @@ export function TutorChat({
           ))}
 
           {streaming ? (
-            <div className="flex gap-2.5">
+            <div className="page-enter flex gap-2.5">
               <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-white">
                 <Sparkles className="size-3.5" />
               </div>
@@ -457,7 +457,7 @@ export function TutorChat({
             </div>
           ) : null}
 
-          <div className="flex items-end gap-2">
+          <div className="relative flex items-end gap-2">
             <Textarea
               ref={textareaRef}
               value={input}

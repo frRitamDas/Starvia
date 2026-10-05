@@ -267,6 +267,73 @@
   }
 }
 
+  /* Product-grade motion: subtle, fast and safe on low-power devices. */
+  .page-enter {
+    animation: starvia-page-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .stagger-enter > * {
+    animation: starvia-item-enter 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger-enter > *:nth-child(1) { animation-delay: 30ms; }
+  .stagger-enter > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger-enter > *:nth-child(3) { animation-delay: 90ms; }
+  .stagger-enter > *:nth-child(4) { animation-delay: 120ms; }
+  .stagger-enter > *:nth-child(5) { animation-delay: 150ms; }
+  .stagger-enter > *:nth-child(6) { animation-delay: 180ms; }
+
+  .interactive-card {
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 180ms ease,
+      background-color 180ms ease,
+      box-shadow 220ms ease;
+  }
+  .interactive-card:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary) / 0.22);
+    box-shadow: 0 14px 35px hsl(var(--foreground) / 0.07);
+  }
+  .interactive-card:active {
+    transform: translateY(0) scale(0.99);
+  }
+
+  .soft-pulse {
+    animation: starvia-soft-pulse 2.4s ease-in-out infinite;
+  }
+
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(100deg, transparent, hsl(var(--foreground) / 0.06), transparent);
+    content: "";
+    animation: starvia-shimmer 1.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes starvia-page-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes starvia-item-enter {
+    from { opacity: 0; transform: translateY(10px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes starvia-soft-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.72; }
+  }
+  @keyframes starvia-shimmer {
+    0% { transform: translateX(-100%); }
+    60%, 100% { transform: translateX(100%); }
+  }
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;
