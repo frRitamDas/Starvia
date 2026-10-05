@@ -63,6 +63,14 @@ export function aiConfigured() {
   }
 }
 
+export function geminiConfigured() {
+  try {
+    return Boolean(serverEnv.geminiApiKey);
+  } catch {
+    return false;
+  }
+}
+
 function endpoint(model: string, stream: boolean) {
   const method = stream ? "streamGenerateContent" : "generateContent";
   const query = stream ? "?alt=sse" : "";
@@ -169,9 +177,9 @@ function sleep(ms: number) {
 }
 
 /** Non-streaming generation. Returns plain text plus token accounting. */
-async function generateTextGemini(options: GenerateOptions): Promise<GenerateResult> {
-  if (!aiConfigured()) {
-    throw new AiError("not_configured", "AI is not configured for this deployment yet.");
+export async function generateTextGemini(options: GenerateOptions): Promise<GenerateResult> {
+  if (!geminiConfigured()) {
+    throw new AiError("not_configured", "Gemini is not configured for this deployment.");
   }
   const model = resolveModel(options.model);
   const started = Date.now();
@@ -266,8 +274,8 @@ export async function generateText(options: GenerateOptions): Promise<GenerateRe
 async function* streamGeminiText(
   options: GenerateOptions,
 ): AsyncGenerator<StreamChunk, StreamResult, void> {
-  if (!aiConfigured()) {
-    throw new AiError("not_configured", "AI is not configured for this deployment yet.");
+  if (!geminiConfigured()) {
+    throw new AiError("not_configured", "Gemini is not configured for this deployment.");
   }
   const model = resolveModel(options.model);
   const started = Date.now();
