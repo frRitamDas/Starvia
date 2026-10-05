@@ -11,9 +11,9 @@ export default async function MarketingLayout({
   const signedIn = Boolean(session?.user && (session.onboarded || session.demo));
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-clip">
       <SiteHeader signedIn={signedIn} />
-      <main id="main" className="flex-1">
+      <main id="main" className="min-w-0 flex-1 pt-[calc(4rem+env(safe-area-inset-top))]">
         {children}
       </main>
       <SiteFooter />

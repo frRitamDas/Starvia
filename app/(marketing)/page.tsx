@@ -2,15 +2,23 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
-  BadgeCheck,
   BarChart3,
-  CalendarClock,
-  ClipboardList,
+  BookOpen,
+  BrainCircuit,
+  CalendarCheck2,
+  Camera,
+  Check,
+  ChevronRight,
+  ClipboardCheck,
   Flame,
-  Layers,
+  GraduationCap,
+  Layers3,
+  MessageCircleQuestion,
+  PenLine,
   ScanLine,
-  Smartphone,
   Sparkles,
+  Target,
+  Trophy,
   Zap,
 } from "lucide-react";
 
@@ -19,22 +27,16 @@ import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { Eyebrow, Section, SectionHeading } from "@/components/marketing/section";
 import { TutorDemo } from "@/components/marketing/tutor-demo";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { FAQS } from "@/lib/faq";
-import { faqJsonLd } from "@/lib/faq";
+import { FAQS, faqJsonLd } from "@/lib/faq";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `${siteConfig.name} — AI study companion for CBSE, ICSE & State Board students`,
+  title: `${siteConfig.name} — AI learning workspace for Indian students`,
   description: siteConfig.description,
   alternates: { canonical: "/" },
   openGraph: {
@@ -43,6 +45,29 @@ export const metadata: Metadata = {
     url: "/",
   },
 };
+
+const STUDY_MODES = [
+  { icon: MessageCircleQuestion, title: "Ask anything", text: "Get a class-aware explanation instead of a one-line answer.", href: "/tutor" },
+  { icon: BookOpen, title: "Learn a topic", text: "Turn a chapter or concept into a structured mini-lesson.", href: "/tutorials" },
+  { icon: ClipboardCheck, title: "Test yourself", text: "Build a quiz, submit it, then see exactly what needs work.", href: "/quiz" },
+  { icon: ScanLine, title: "Solve a doubt", text: "Type it or photograph the question and learn the method.", href: "/solve" },
+  { icon: CalendarCheck2, title: "Prepare for an exam", text: "Create a focused revision plan around your available time.", href: "/exam-prep" },
+  { icon: Layers3, title: "Revise faster", text: "Use flashcards and weak-topic recommendations for your next pass.", href: "/flashcards" },
+];
+
+const STUDY_LOOP = [
+  { step: "01", title: "Understand", text: "Ask Starvia to explain the idea in language that fits your class." },
+  { step: "02", title: "Practise", text: "Use targeted questions to turn recognition into actual recall." },
+  { step: "03", title: "Review", text: "See mistakes, weak topics and what deserves another session." },
+  { step: "04", title: "Return tomorrow", text: "Your streak and progress make the next study session obvious." },
+];
+
+const TRUST_POINTS = [
+  "CBSE, ICSE and State Board ready",
+  "Classes 6–12",
+  "Your profile shapes every AI response",
+  "Free plan with no card required",
+];
 
 export default function LandingPage() {
   return (
@@ -66,406 +91,329 @@ export default function LandingPage() {
         }}
       />
 
-      {/* ---------------------------------------------------------------- Hero */}
-      <Section className="pb-6 pt-12 sm:pt-16 lg:pt-20" bleed>
-        <div className="container">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
-            <div className="space-y-7">
-              <div className="flex flex-wrap items-center gap-2">
-                <Eyebrow>
-                  <Sparkles className="size-3.5" />
-                  Built for Indian students
-                </Eyebrow>
-                <Badge variant="secondary" className="gap-1.5">
-                  CBSE · ICSE · State Board
-                </Badge>
-              </div>
-
-              <div className="space-y-5">
-                <h1 className="text-[34px] font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-[56px]">
-                  Everything you study,
-                  <br className="hidden sm:block" /> understood properly.
-                </h1>
-                <p className="max-w-xl text-[15px] leading-relaxed text-muted-foreground sm:text-lg">
-                  Starvia is your AI study companion for Classes 6–12 — learn concepts, solve doubts,
-                  practice with quizzes and walk into exams prepared. Written for your class, your
-                  board and your syllabus.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg" variant="gradient" className="sm:w-auto">
-                  <Link href="/signup">
-                    Start learning free
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="sm:w-auto">
-                  <Link href="#features">Explore features</Link>
-                </Button>
-              </div>
-
-              <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
-                {[
-                  { icon: Zap, label: "Answers in seconds" },
-                  { icon: Smartphone, label: "Made for phones" },
-                  { icon: BadgeCheck, label: "Free plan, no card" },
-                ].map((item) => (
-                  <li key={item.label} className="inline-flex items-center gap-1.5">
-                    <item.icon className="size-4 text-primary" />
-                    {item.label}
-                  </li>
-                ))}
-              </ul>
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-border/60">
+        <div className="absolute inset-0 premium-grain opacity-70" aria-hidden />
+        <div className="absolute left-1/2 top-0 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-foreground/[0.035] blur-3xl" aria-hidden />
+        <div className="container relative py-14 sm:py-20 lg:py-24">
+          <div className="mx-auto max-w-5xl text-center">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Eyebrow><Sparkles className="size-3.5" /> Built around how students actually study</Eyebrow>
+              <Badge variant="secondary">CBSE · ICSE · State Board</Badge>
             </div>
 
-            <div className="relative">
-              <div
-                className="absolute -inset-6 -z-10 rounded-[32px] bg-gradient-to-tr from-primary/10 via-transparent to-sky-400/10 blur-2xl"
-                aria-hidden
-              />
+            <h1 className="mx-auto mt-7 max-w-4xl text-[42px] font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-[78px]">
+              Study with clarity.
+              <br />
+              <span className="text-muted-foreground">Not more noise.</span>
+            </h1>
+
+            <p className="mx-auto mt-7 max-w-2xl text-[16px] leading-7 text-muted-foreground sm:text-lg">
+              Starvia is a focused AI learning workspace for Indian school students. Ask, understand,
+              practise, revise and track your progress — all around your class, board and goals.
+            </p>
+
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Button asChild size="lg" variant="gradient" className="h-12 px-7">
+                <Link href="/signup">Create your free study space <ArrowRight /></Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="h-13 px-7">
+                <Link href="#tools">See what you can do</Link>
+              </Button>
+            </div>
+
+            <div className="mx-auto mt-7 flex max-w-3xl flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground sm:text-sm">
+              {TRUST_POINTS.map((point) => (
+                <span key={point} className="inline-flex items-center gap-1.5">
+                  <Check className="size-3.5 text-foreground" /> {point}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="mx-auto mt-14 max-w-5xl sm:mt-16">
+            <div className="rounded-[28px] border border-border/80 bg-card p-2 shadow-[0_24px_80px_-32px_hsl(var(--foreground)/.28)] sm:p-3">
               <TutorDemo />
             </div>
           </div>
         </div>
-      </Section>
+      </section>
 
-      {/* ------------------------------------------------------------- Metrics */}
-      <Section className="py-8 sm:py-10">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { value: "7", label: "Classes covered (6–12)" },
-            { value: "3", label: "Boards supported at launch" },
-            { value: "6", label: "AI study tools in one workspace" },
-            { value: "₹0", label: "To get started today" },
-          ].map((stat) => (
-            <Card key={stat.label} className="p-5">
-              <p className="font-display text-3xl font-semibold tracking-tight text-gradient">
-                {stat.value}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
-            </Card>
+      {/* Personalised entry point */}
+      <Section id="tools" className="py-16 sm:py-20">
+        <SectionHeading
+          eyebrow="Your next move"
+          title="Open Starvia and know exactly what to do."
+          description="No empty dashboard. Choose the kind of help you need and go straight into a focused study session."
+        />
+        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {STUDY_MODES.map((item) => (
+            <Link key={item.title} href={item.href} className="group min-w-0">
+              <Card className="h-full p-5 transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:border-foreground/30 group-hover:shadow-soft">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-foreground/[0.07] text-foreground">
+                    <item.icon className="size-5" />
+                  </div>
+                  <ChevronRight className="mt-1 size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                </div>
+                <h3 className="mt-5 font-display text-base font-semibold">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.text}</p>
+              </Card>
+            </Link>
           ))}
         </div>
       </Section>
 
-      {/* ------------------------------------------------------------ Features */}
-      <Section id="features" className="border-t border-border/60">
+      {/* Study loop */}
+      <Section id="how-it-works" className="border-y border-border/60 bg-muted/25">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start lg:gap-20">
+          <div className="lg:sticky lg:top-24">
+            <Eyebrow><Target className="size-3.5" /> The Starvia study loop</Eyebrow>
+            <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">
+              Less searching.
+              <br />
+              More actual learning.
+            </h2>
+            <p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground sm:text-base">
+              Starvia connects explanation, practice and revision so each session has a purpose.
+              Your activity feeds your progress instead of disappearing after you close the tab.
+            </p>
+            <Button asChild variant="outline" className="mt-6">
+              <Link href="/dashboard">See the learning space <ArrowRight /></Link>
+            </Button>
+          </div>
+
+          <div className="grid gap-3">
+            {STUDY_LOOP.map((item, index) => (
+              <Card key={item.step} className="group p-5 sm:p-6">
+                <div className="grid gap-5 sm:grid-cols-[64px_1fr] sm:items-start">
+                  <span className="font-mono text-xs font-semibold text-muted-foreground">{item.step}</span>
+                  <div>
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{item.text}</p>
+                    <div className="mt-4 h-px w-0 bg-foreground transition-all duration-500 group-hover:w-16" />
+                  </div>
+                </div>
+                {index < STUDY_LOOP.length - 1 ? null : (
+                  <div className="mt-5 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <Flame className="size-3.5" /> Keep the habit going with your daily streak.
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* Feature system */}
+      <Section className="py-16 sm:py-20 lg:py-24">
         <SectionHeading
-          eyebrow="One workspace"
-          title="Six study tools that work together"
-          description="Ask, generate, practise, revise and track — without juggling five different apps or losing your progress."
+          eyebrow="One learning system"
+          title="Everything important, connected."
+          description="Starvia is not just a chat box. Each tool has a job, and the outputs become useful inputs for your next study session."
         />
         <div className="mt-10">
           <FeatureGrid />
         </div>
       </Section>
 
-      {/* ----------------------------------------------------------- Tutorials */}
-      <Section className="border-t border-border/60 bg-muted/20">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div className="space-y-5">
-            <Eyebrow>
-              <BookIcon />
-              AI Tutorials
-            </Eyebrow>
-            <h2 className="text-2xl font-semibold leading-tight sm:text-3xl lg:text-[34px]">
-              A full chapter explained the way a good teacher would
-            </h2>
-            <p className="text-[15px] leading-relaxed text-muted-foreground">
-              Pick your class, board, subject and topic. Starvia writes a structured tutorial:
-              learning objectives, an introduction that connects to what you already know, worked
-              examples, key terms, exam tips, common mistakes and practice questions with hints.
-            </p>
-            <ul className="space-y-2.5 text-sm">
-              {[
-                "Stay inside your syllabus — no confusing extra depth",
-                "Mathematical notation rendered properly",
-                "Mark complete and it appears in your progress",
-              ].map((item) => (
-                <li key={item} className="flex gap-2.5">
-                  <BadgeCheck className="mt-0.5 size-4 shrink-0 text-success" />
-                  <span className="text-muted-foreground">{item}</span>
-                </li>
-              ))}
-            </ul>
-            <Button asChild variant="outline">
-              <Link href="/tutorials">
-                Generate a tutorial
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <Card className="overflow-hidden">
-            <div className="border-b border-border/70 bg-muted/30 px-4 py-3">
-              <p className="text-sm font-medium">Ohm&apos;s Law — Class 10 · CBSE · Science</p>
-            </div>
-            <div className="space-y-4 p-5">
-              {[
-                { label: "Learning objectives", progress: 100 },
-                { label: "Concept explanation", progress: 100 },
-                { label: "Worked examples", progress: 65 },
-                { label: "Practice + summary", progress: 20 },
-              ].map((row) => (
-                <div key={row.label} className="space-y-2">
-                  <div className="flex items-center justify-between text-[13px]">
-                    <span className="text-muted-foreground">{row.label}</span>
-                    <span className="font-medium">{row.progress}%</span>
-                  </div>
-                  <Progress value={row.progress} className="h-1.5" />
-                </div>
-              ))}
-              <div className="rounded-xl border border-border/70 bg-muted/30 p-3.5 text-[13px] text-muted-foreground">
-                <span className="font-medium text-foreground">Exam tip:</span> always state the
-                constant-temperature condition when you write V = IR.
+      {/* Tutorial + quiz */}
+      <Section className="border-y border-border/60 bg-muted/25">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="overflow-hidden p-0">
+            <div className="border-b border-border/70 p-5 sm:p-6">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <BookOpen className="size-4" /> LEARN
               </div>
+              <h2 className="mt-3 text-2xl font-semibold">Turn a topic into a lesson.</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Learning objectives, concept breakdown, examples, exam tips, common mistakes and practice —
+                generated as structured content you can actually revise.
+              </p>
             </div>
-          </Card>
-        </div>
-      </Section>
-
-      {/* ---------------------------------------------------------------- Quiz */}
-      <Section className="border-t border-border/60">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <Card className="order-2 overflow-hidden lg:order-1">
-            <div className="flex items-center justify-between border-b border-border/70 bg-muted/30 px-4 py-3">
-              <p className="text-sm font-medium">Electricity — quick check</p>
-              <Badge variant="secondary">3 / 10</Badge>
-            </div>
-            <div className="space-y-4 p-5">
-              <p className="text-sm font-medium">The SI unit of resistance is:</p>
-              <div className="space-y-2.5">
-                {["Volt", "Ohm", "Ampere", "Watt"].map((option, index) => (
-                  <div
-                    key={option}
-                    className={`flex items-center gap-3 rounded-xl border px-3.5 py-3 text-sm ${
-                      index === 1
-                        ? "border-success/50 bg-success/[0.07]"
-                        : "border-border/70 bg-background/60"
-                    }`}
-                  >
-                    <span className="flex size-6 items-center justify-center rounded-full border border-border/70 text-xs font-medium">
-                      {String.fromCharCode(65 + index)}
-                    </span>
-                    {option}
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-xl border border-border/70 bg-muted/30 p-3.5 text-[13px] text-muted-foreground">
-                <span className="font-medium text-foreground">Explanation:</span> resistance is
-                measured in ohms (Ω), named after Georg Simon Ohm.
-              </div>
-            </div>
-          </Card>
-
-          <div className="order-1 space-y-5 lg:order-2">
-            <Eyebrow>
-              <ClipboardList className="size-3.5" />
-              AI Quiz
-            </Eyebrow>
-            <h2 className="text-2xl font-semibold leading-tight sm:text-3xl lg:text-[34px]">
-              Practise, then find out exactly what to fix
-            </h2>
-            <p className="text-[15px] leading-relaxed text-muted-foreground">
-              Generate MCQs, true/false and short-answer questions from any chapter. Answers stay
-              hidden until you submit, and every attempt ends with explanations, your score and the
-              topics you should revise next.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                { icon: BarChart3, label: "Score & accuracy" },
-                { icon: Layers, label: "Weak topics detected" },
-                { icon: CalendarClock, label: "Revision suggestions" },
-                { icon: Flame, label: "XP for every attempt" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-2.5 rounded-xl border border-border/70 px-3.5 py-2.5 text-[13px]"
-                >
-                  <item.icon className="size-4 text-primary" />
-                  <span className="text-muted-foreground">{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ------------------------------------------------------------- Solver */}
-      <Section className="border-t border-border/60 bg-muted/20">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div className="space-y-5">
-            <Eyebrow>
-              <ScanLine className="size-3.5" />
-              Question solver
-            </Eyebrow>
-            <h2 className="text-2xl font-semibold leading-tight sm:text-3xl lg:text-[34px]">
-              Stuck at question 7? Photograph it.
-            </h2>
-            <p className="text-[15px] leading-relaxed text-muted-foreground">
-              Type a doubt or upload a photo from your textbook. Starvia identifies the subject and
-              topic, explains the concept, solves it step by step with units, tells you the examiner
-              trap to avoid, and gives you one similar question to try yourself.
-            </p>
-            <ol className="space-y-3 text-sm">
-              {[
-                "Subject and topic identified",
-                "Concept explained at your level",
-                "Step-by-step solution",
-                "Final answer with units",
-                "A similar practice question",
-              ].map((step, index) => (
-                <li key={step} className="flex gap-3">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+            <div className="space-y-3 p-5 sm:p-6">
+              {["Learning objectives", "Core concept", "Worked example", "Exam tip", "Practice question"].map((label, index) => (
+                <div key={label} className="flex items-center gap-3 rounded-xl border border-border/70 p-3">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-foreground/[0.07] text-xs font-semibold">
                     {index + 1}
                   </span>
-                  <span className="text-muted-foreground">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <Card className="p-5">
-            <div className="rounded-xl border border-dashed border-primary/40 bg-primary/[0.04] p-6 text-center">
-              <ScanLine className="mx-auto size-8 text-primary" />
-              <p className="mt-3 text-sm font-medium">Drop a photo of your question</p>
-              <p className="mt-1 text-xs text-muted-foreground">PNG, JPG or WebP · up to 5 MB</p>
-            </div>
-            <div className="mt-4 space-y-3 text-[13px]">
-              <div className="rounded-xl border border-border/70 bg-background/60 p-3.5">
-                <p className="font-medium text-foreground">Concept</p>
-                <p className="mt-1 text-muted-foreground">
-                  Galvanic cells convert chemical energy into electrical energy through redox
-                  reactions.
-                </p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-background/60 p-3.5">
-                <p className="font-medium text-foreground">Watch out for</p>
-                <p className="mt-1 text-muted-foreground">
-                  Reversing the sign of the cell potential — oxidation always happens at the anode.
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </Section>
-
-      {/* ----------------------------------------------------------- Exam prep */}
-      <Section className="border-t border-border/60">
-        <SectionHeading
-          eyebrow="Exam preparation"
-          title="Walk in prepared, not panicked"
-          description="Pick your exam type and Starvia builds a day-wise plan around high-weightage chapters, then tracks each topic as you move it from 'learning' to 'mastered'."
-        />
-        <div className="mt-10 grid gap-4 lg:grid-cols-3">
-          {[
-            {
-              title: "Revision plan",
-              description: "Day-wise tasks with time estimates — realistic for the days you have left.",
-              items: ["Highest weightage first", "Formula sheet included", "Adjustable days"],
-            },
-            {
-              title: "Practice set",
-              description: "Mixed questions at board level, with marking-style answers.",
-              items: ["MCQs + long answers", "Difficulty labelled", "Marks per question"],
-            },
-            {
-              title: "Mock test",
-              description: "A full paper blueprint with section-wise marks and timing guidance.",
-              items: ["Section blueprint", "Time per section", "Self-evaluation"],
-            },
-          ].map((card) => (
-            <Card key={card.title} className="p-6">
-              <h3 className="font-display text-lg font-semibold">{card.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{card.description}</p>
-              <ul className="mt-4 space-y-2 text-[13px]">
-                {card.items.map((item) => (
-                  <li key={item} className="flex gap-2">
-                    <BadgeCheck className="mt-0.5 size-4 shrink-0 text-success" />
-                    <span className="text-muted-foreground">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ))}
-        </div>
-      </Section>
-
-      {/* ----------------------------------------------------------- Progress */}
-      <Section className="border-t border-border/60 bg-muted/20">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div className="space-y-5">
-            <Eyebrow>
-              <BarChart3 className="size-3.5" />
-              Progress & streaks
-            </Eyebrow>
-            <h2 className="text-2xl font-semibold leading-tight sm:text-3xl lg:text-[34px]">
-              Watch the effort turn into results
-            </h2>
-            <p className="text-[15px] leading-relaxed text-muted-foreground">
-              Tutorials completed, questions asked, quiz accuracy, learning time and weak subjects —
-              laid out clearly. Streaks and XP keep the habit going, without turning study into a game
-              you forget to open.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { icon: Flame, value: "12", label: "Day streak" },
-                { icon: Zap, value: "Level 5", label: "1,840 XP" },
-                { icon: Layers, value: "38", label: "Topics practised" },
-              ].map((stat) => (
-                <Card key={stat.label} className="p-4">
-                  <stat.icon className="size-4 text-primary" />
-                  <p className="mt-2 font-display text-xl font-semibold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          <Card className="p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Quiz accuracy — last 6 attempts</p>
-              <Badge variant="success">+14% this month</Badge>
-            </div>
-            <div className="mt-6 flex h-40 items-end gap-3">
-              {[45, 58, 52, 66, 74, 82].map((value, index) => (
-                <div key={index} className="flex flex-1 flex-col items-center gap-2">
-                  <div
-                    className="w-full rounded-t-lg bg-brand-gradient transition-all"
-                    style={{ height: `${value}%` }}
-                  />
-                  <span className="text-[11px] text-muted-foreground">{value}%</span>
+                  <span className="text-sm font-medium">{label}</span>
+                  <Check className="ml-auto size-4 text-muted-foreground" />
                 </div>
               ))}
             </div>
           </Card>
+
+          <Card className="overflow-hidden p-0">
+            <div className="border-b border-border/70 p-5 sm:p-6">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <ClipboardCheck className="size-4" /> PRACTISE
+              </div>
+              <h2 className="mt-3 text-2xl font-semibold">Know what you know.</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Generate a syllabus-aware quiz, submit it without seeing the answers early, then use
+                the explanations and weak areas to decide what comes next.
+              </p>
+            </div>
+            <div className="p-5 sm:p-6">
+              <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Class 9 · Biology</span>
+                  <span>Question 6 / 10</span>
+                </div>
+                <p className="mt-5 text-sm font-semibold">Which structure controls what enters a cell?</p>
+                <div className="mt-4 space-y-2">
+                  {["Cell wall", "Cell membrane", "Cytoplasm", "Nucleus"].map((option, index) => (
+                    <div key={option} className="flex items-center gap-3 rounded-xl border border-border/70 bg-background p-3 text-sm">
+                      <span className="flex size-6 items-center justify-center rounded-full border border-border text-xs">
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
         </div>
       </Section>
 
-      {/* ------------------------------------------------------------ Pricing */}
-      <Section id="pricing" className="border-t border-border/60">
+      {/* Solve + exam */}
+      <Section>
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <Card className="overflow-hidden p-0">
+            <div className="border-b border-border/70 p-6 sm:p-8">
+              <Eyebrow><Camera className="size-3.5" /> Question solver</Eyebrow>
+              <h2 className="mt-5 max-w-xl text-3xl font-semibold leading-tight">
+                A difficult question should become a learning moment.
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                Upload a textbook photo or type the problem. Starvia identifies the subject, explains
+                the idea, works through the method and gives you a similar problem to attempt.
+              </p>
+            </div>
+            <div className="grid gap-3 p-6 sm:grid-cols-3 sm:p-8">
+              {[
+                { icon: ScanLine, title: "Read", text: "Understand the question." },
+                { icon: BrainCircuit, title: "Explain", text: "Connect it to the concept." },
+                { icon: PenLine, title: "Practise", text: "Try a similar one." },
+              ].map((item) => (
+                <div key={item.title} className="rounded-2xl border border-border/70 p-4">
+                  <item.icon className="size-4" />
+                  <p className="mt-3 text-sm font-semibold">{item.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="p-6 sm:p-8">
+            <Eyebrow><CalendarCheck2 className="size-3.5" /> Exam prep</Eyebrow>
+            <h2 className="mt-5 text-3xl font-semibold leading-tight">Know what to study next.</h2>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Build a revision plan from your board, class, chapters and exam date. Move topics through
+              Not started → Learning → Practised → Mastered.
+            </p>
+            <div className="mt-7 space-y-3">
+              {[
+                { label: "Important topics", value: 82 },
+                { label: "Practice coverage", value: 61 },
+                { label: "Revision readiness", value: 44 },
+              ].map((item) => (
+                <div key={item.label} className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{item.label}</span>
+                    <span className="font-medium">{item.value}%</span>
+                  </div>
+                  <Progress value={item.value} className="h-1.5" />
+                </div>
+              ))}
+            </div>
+            <Button asChild className="mt-7" variant="outline">
+              <Link href="/exam-prep">Build a revision plan <ArrowRight /></Link>
+            </Button>
+          </Card>
+        </div>
+      </Section>
+
+      {/* Progress */}
+      <Section className="border-y border-white/15 bg-black text-white">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-20">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium">
+              <BarChart3 className="size-3.5" /> Your progress
+            </div>
+            <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">
+              Make progress visible.
+            </h2>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-white/65 sm:text-base">
+              Study time, topics practised, quiz accuracy, weak subjects, streaks and achievements —
+              presented as useful signals, not vanity numbers.
+            </p>
+            <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-3">
+              {[
+                { value: "12", label: "day streak", icon: Flame },
+                { value: "1.8k", label: "XP earned", icon: Zap },
+                { value: "38", label: "topics", icon: GraduationCap },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-white/15 bg-white/[0.06] p-4">
+                  <item.icon className="size-4 text-white/70" />
+                  <p className="mt-3 text-xl font-semibold">{item.value}</p>
+                  <p className="mt-1 text-[11px] text-white/55">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[26px] border border-background/15 bg-background/[0.06] p-5 sm:p-7">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">Weekly study rhythm</p>
+                <p className="mt-1 text-xs text-background/50">Small sessions add up.</p>
+              </div>
+              <Trophy className="size-5 text-background/70" />
+            </div>
+            <div className="mt-7 grid grid-cols-7 gap-2">
+              {[34, 58, 46, 78, 62, 88, 70].map((value, index) => (
+                <div key={index} className="flex h-36 flex-col justify-end gap-2">
+                  <div className="rounded-t-lg bg-white/80" style={{ height: `${value}%` }} />
+                  <span className="text-center text-[10px] text-background/45">{["M","T","W","T","F","S","S"][index]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* Pricing */}
+      <Section id="pricing">
         <SectionHeading
-          eyebrow="Pricing"
-          title="Start free. Upgrade when you're serious."
-          description="Every plan includes the full study workspace. Paid plans simply raise your daily AI limits and unlock deeper exam preparation."
+          eyebrow="Simple plans"
+          title="Start free. Upgrade when you need more."
+          description="The full study workflow is available from day one. Paid plans increase AI capacity and unlock deeper preparation features."
         />
         <div className="mt-10">
           <PricingSection />
         </div>
       </Section>
 
-      {/* ---------------------------------------------------------------- FAQ */}
+      {/* FAQ */}
       <Section id="faq" className="border-t border-border/60 bg-muted/20">
-        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <SectionHeading
-            align="left"
-            eyebrow="FAQ"
-            title="Questions students actually ask"
-            description="Still unsure about something? Write to us — we reply within one working day."
-          />
+        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div>
+            <Eyebrow><MessageCircleQuestion className="size-3.5" /> FAQ</Eyebrow>
+            <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">
+              Clear answers before you begin.
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">
+              Everything important about plans, AI, privacy and getting started is explained plainly.
+            </p>
+            <Button asChild variant="outline" className="mt-6">
+              <Link href="/faq">Read all FAQs <ArrowRight /></Link>
+            </Button>
+          </div>
           <Accordion type="single" collapsible className="w-full">
-            {FAQS.slice(0, 8).map((faq, index) => (
+            {FAQS.slice(0, 7).map((faq, index) => (
               <AccordionItem key={faq.question} value={`item-${index}`}>
                 <AccordionTrigger>{faq.question}</AccordionTrigger>
                 <AccordionContent>{faq.answer}</AccordionContent>
@@ -475,14 +423,10 @@ export default function LandingPage() {
         </div>
       </Section>
 
-      {/* ---------------------------------------------------------------- CTA */}
-      <Section>
+      {/* Final CTA */}
+      <Section className="py-14 sm:py-20">
         <CtaBand />
       </Section>
     </>
   );
-}
-
-function BookIcon() {
-  return <Sparkles className="size-3.5" />;
 }

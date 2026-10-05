@@ -2,7 +2,7 @@ name: Starvia CI
 
 on:
   push:
-    branches: ["main", "starvia-v1-premium-polish"]
+    branches: ["main", "starvia-v1-premium-polish", "starvia-home-v2-responsive"]
   pull_request:
     branches: ["main"]
 

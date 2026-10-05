@@ -27,11 +27,10 @@ export const siteConfig = {
   ],
   url: publicEnv.siteUrl,
   nav: [
-    { title: "Features", href: "/features" },
-    { title: "Pricing", href: "/pricing" },
-    { title: "FAQ", href: "/faq" },
-    { title: "About", href: "/about" },
-    { title: "Contact", href: "/contact" },
+    { title: "Features", href: "/#tools" },
+    { title: "How it works", href: "/#how-it-works" },
+    { title: "Pricing", href: "/#pricing" },
+    { title: "FAQ", href: "/#faq" },
   ],
   footerLinks: {
     product: [
