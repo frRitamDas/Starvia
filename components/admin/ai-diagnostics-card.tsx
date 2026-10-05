@@ -27,21 +27,47 @@ type DiagnosticResponse = {
   };
 };
 
-function ProviderRow({ label, result }: { label: string; result: ProviderResult }) {
+function ProviderRow({ label, result }: { label: string; result: ProviderResult | null }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 p-3.5">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          {result.ok ? <CheckCircle2 className="size-4 text-success" /> : <XCircle className="size-4 text-destructive" />}
+          {result ? (
+            result.ok ? (
+              <CheckCircle2 className="size-4 text-success" />
+            ) : (
+              <XCircle className="size-4 text-destructive" />
+            )
+          ) : (
+            <Activity className="size-4 text-muted-foreground" />
+          )}
           <p className="text-[13px] font-medium">{label}</p>
-          <Badge variant={result.configured ? "secondary" : "outline"}>
-            {result.configured ? (result.ok ? "responding" : "configured") : "missing key"}
+          <Badge
+            variant={
+              result
+                ? result.ok
+                  ? "success"
+                  : result.configured
+                    ? "secondary"
+                    : "outline"
+                : "outline"
+            }
+          >
+            {result
+              ? result.ok
+                ? "responding"
+                : result.configured
+                  ? "configured"
+                  : "missing key"
+              : "not checked"}
           </Badge>
         </div>
         <p className="mt-1 text-[11.5px] text-muted-foreground">
-          {result.ok
-            ? `${result.model ?? "unknown model"} · ${result.latencyMs ?? 0} ms`
-            : result.error ?? "Not probed successfully yet."}
+          {!result
+            ? "Run the live provider test to verify an actual response."
+            : result.ok
+              ? `${result.model ?? "unknown model"} · ${result.latencyMs ?? 0} ms`
+              : result.error ?? "Provider did not answer successfully."}
         </p>
       </div>
     </div>
@@ -86,13 +112,17 @@ export function AiDiagnosticsCard() {
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
-        <ProviderRow label="NaraRouter" result={result?.results.naraRouter ?? { configured: true, ok: false, latencyMs: null, model: null, error: "Not checked yet." }} />
-        <ProviderRow label="Gemini" result={result?.results.gemini ?? { configured: true, ok: false, latencyMs: null, model: null, error: "Not checked yet." }} />
+        <ProviderRow label="NaraRouter" result={result?.results.naraRouter ?? null} />
+        <ProviderRow label="Gemini" result={result?.results.gemini ?? null} />
         <Button onClick={() => void runProbe()} disabled={busy} variant="outline" className="w-full">
           {busy ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
           {busy ? "Testing providers…" : "Run live provider test"}
         </Button>
-        {result ? <p className="text-[11px] text-muted-foreground">Last checked {new Date(result.checkedAt).toLocaleString("en-IN")}</p> : null}
+        {result ? (
+          <p className="text-[11px] text-muted-foreground">
+            Last checked {new Date(result.checkedAt).toLocaleString("en-IN")}
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );
