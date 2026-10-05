@@ -285,6 +285,15 @@ export async function* streamTextNaraRouter(
   const reader = response.body.getReader();
   let streamTimedOut = false;
   const streamTimeoutMs = options.timeoutMs ?? serverEnv.aiTimeoutMs;
+  let streamAborted = false;
+  const abortUpstream = () => {
+    streamAborted = true;
+    void reader.cancel().catch(() => undefined);
+  };
+  if (options.signal) {
+    if (options.signal.aborted) abortUpstream();
+    else options.signal.addEventListener("abort", abortUpstream, { once: true });
+  }
   const streamTimer = setTimeout(() => {
     streamTimedOut = true;
     void reader.cancel().catch(() => undefined);
@@ -300,6 +309,9 @@ export async function* streamTextNaraRouter(
   try {
     while (true) {
       const { done, value } = await reader.read();
+      if (streamAborted || options.signal?.aborted) {
+        throw new AiError("unavailable", "The response was cancelled before it finished.");
+      }
       if (streamTimedOut) {
         throw new AiError("timeout", "AI took too long to respond. Please try again.");
       }
@@ -358,5 +370,6 @@ export async function* streamTextNaraRouter(
     };
   } finally {
     clearTimeout(streamTimer);
+    options.signal?.removeEventListener("abort", abortUpstream);
   }
 }
