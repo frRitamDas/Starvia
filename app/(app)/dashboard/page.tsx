@@ -6,9 +6,11 @@ import {
   BarChart3,
   BookOpenCheck,
   CalendarClock,
+  CircleAlert,
   ClipboardList,
   Flame,
   Layers,
+  NotebookPen,
   Play,
   ScanLine,
   Sparkles,
@@ -40,6 +42,8 @@ const QUICK_ACTIONS = [
   { title: "Solve question", description: "Photo or text", href: "/solve", icon: ScanLine },
   { title: "Exam prep", description: "Revision plan", href: "/exam-prep", icon: CalendarClock },
   { title: "Flashcards", description: "Quick revision", href: "/flashcards", icon: Layers },
+  { title: "Study notes", description: "Save and map ideas", href: "/notes", icon: NotebookPen },
+  { title: "Review mistakes", description: "Learn from quizzes", href: "/mistakes", icon: CircleAlert },
 ] as const;
 
 const DAILY_GOAL_MINUTES = 45;
@@ -93,7 +97,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {QUICK_ACTIONS.map((action) => (
           <Link
             key={action.href}

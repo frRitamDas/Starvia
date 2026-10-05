@@ -159,6 +159,23 @@ export const flashcardPayloadSchema = z.object({
 
 export type FlashcardPayload = z.infer<typeof flashcardPayloadSchema>;
 
+/* ------------------------------ mind maps --------------------------- */
+
+export const studyMindMapSchema = z.object({
+  root: str(120),
+  branches: z
+    .array(
+      z.object({
+        title: str(120),
+        details: z.array(str(180)).min(1).max(5),
+      }),
+    )
+    .min(3)
+    .max(8),
+});
+
+export type StudyMindMapPayload = z.infer<typeof studyMindMapSchema>;
+
 /* ----------------------------- exam prep ---------------------------- */
 
 export const examPlanPayloadSchema = z.object({

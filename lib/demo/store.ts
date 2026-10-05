@@ -11,6 +11,7 @@ import type {
   QuizAttempt,
   QuizQuestion,
   StudyProgress,
+  StudyNote,
   Subscription,
   Tutorial,
 } from "@/lib/demo/types";
@@ -36,6 +37,7 @@ export interface DemoState {
   decks: (FlashcardDeck & { cards: Flashcard[] })[];
   cardProgress: Map<string, FlashcardProgress>;
   progress: StudyProgress[];
+  notes: StudyNote[];
   achievements: Achievement[];
   payments: Payment[];
   events: { feature: string; status: string; latencyMs: number; createdAt: string }[];
@@ -402,6 +404,39 @@ function seedState(): DemoState {
     decks: [deck],
     cardProgress: new Map(),
     progress,
+    notes: [
+      {
+        id: "90000000-0000-4000-8000-000000000001",
+        user_id: DEMO_USER_ID,
+        title: "Electricity — the essentials",
+        subject: "Science",
+        topic: "Electricity",
+        content:
+          "# Electricity — the essentials\n\n## Ohm's law\nAt constant temperature, potential difference is directly proportional to current: V = IR. Resistance is measured in ohms (Ω).\n\n## Series circuits\n- Current is the same at every point.\n- Total resistance is the sum of each resistor.\n- Adding a bulb increases resistance and reduces current.\n\n## Parallel circuits\n- Each branch gets the same potential difference.\n- Total resistance decreases when a branch is added.",
+        mind_map: {
+          root: "Electricity",
+          branches: [
+            { title: "Ohm's law", details: ["V = IR", "Valid at constant temperature", "Resistance is measured in ohms"] },
+            { title: "Series circuits", details: ["Same current throughout", "Resistances add", "Adding a bulb lowers current"] },
+            { title: "Parallel circuits", details: ["Same voltage across branches", "Total resistance falls as branches are added"] },
+          ],
+        },
+        created_at: isoDaysAgo(4),
+        updated_at: isoDaysAgo(1),
+      },
+      {
+        id: "90000000-0000-4000-8000-000000000002",
+        user_id: DEMO_USER_ID,
+        title: "Quadratic equations — quick recap",
+        subject: "Mathematics",
+        topic: "Quadratic Equations",
+        content:
+          "# Quadratic equations\n\nA quadratic equation has the form ax² + bx + c = 0, where a ≠ 0.\n\n## Factorisation\nFind two numbers whose product is ac and whose sum is b. Split the middle term, factor by grouping, then set each factor to zero.\n\n## Formula\nFor ax² + bx + c = 0, x = (-b ± √(b² - 4ac)) / 2a. The discriminant b² - 4ac tells you how many real roots exist.",
+        mind_map: null,
+        created_at: isoDaysAgo(2),
+        updated_at: isoDaysAgo(2),
+      },
+    ],
     achievements,
     payments: [],
     events: [],
@@ -414,6 +449,10 @@ function seedState(): DemoState {
 export function demoStore(): DemoState {
   if (!globalForDemo.__starviaDemo) {
     globalForDemo.__starviaDemo = seedState();
+  } else if (!Array.isArray(globalForDemo.__starviaDemo.notes)) {
+    // Preserve existing in-memory demo activity during hot reloads after the
+    // DemoState shape grows; only initialise the newly-added collection.
+    globalForDemo.__starviaDemo.notes = seedState().notes;
   }
   return globalForDemo.__starviaDemo;
 }

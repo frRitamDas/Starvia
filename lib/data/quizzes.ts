@@ -4,6 +4,7 @@ import { demoId, demoStore } from "@/lib/demo/store";
 import { ApiError } from "@/lib/http";
 import type { SessionContext } from "@/lib/session";
 import type {
+  MistakeReviewItem,
   Quiz,
   QuizAnswerRecord,
   QuizAttempt,
@@ -335,6 +336,97 @@ export function weakTopicsFrom(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([topic]) => topic);
+}
+
+/**
+ * A lightweight mistake bank derived from the latest 100 server-graded quiz
+ * attempts. A question leaves the active bank once its latest attempt is right.
+ */
+export async function listMistakeBank(context: SessionContext, limit = 120): Promise<MistakeReviewItem[]> {
+  if (!context.user) return [];
+
+  const attempts = await listAttempts(context, 100);
+  const byQuestion = new Map<
+    string,
+    { latestCorrect: boolean; latestAnswer: string; latestAt: string; quizId: string; misses: number }
+  >();
+
+  for (const attempt of attempts) {
+    for (const answer of attempt.answers) {
+      const item = byQuestion.get(answer.questionId);
+      if (!item) {
+        byQuestion.set(answer.questionId, {
+          latestCorrect: answer.correct,
+          latestAnswer: answer.answer,
+          latestAt: attempt.created_at,
+          quizId: attempt.quiz_id,
+          misses: answer.correct ? 0 : 1,
+        });
+      } else if (!answer.correct) {
+        item.misses += 1;
+      }
+    }
+  }
+
+  const active = [...byQuestion.entries()]
+    .filter(([, item]) => !item.latestCorrect)
+    .sort((left, right) => right[1].latestAt.localeCompare(left[1].latestAt))
+    .slice(0, limit);
+  if (active.length === 0) return [];
+
+  const questionIds = active.map(([id]) => id);
+  const quizIds = [...new Set(active.map(([, item]) => item.quizId))];
+  let questions: QuizQuestion[] = [];
+  let quizzes: Pick<Quiz, "id" | "title" | "subject" | "chapter">[] = [];
+
+  if (context.demo) {
+    const store = demoStore();
+    questions = store.quizQuestions.filter((question) => questionIds.includes(question.id));
+    quizzes = store.quizzes.filter((quiz) => quizIds.includes(quiz.id));
+  } else {
+    const [questionResult, quizResult] = await Promise.all([
+      context.db!
+        .from("quiz_questions")
+        .select("*")
+        .eq("user_id", context.user.id)
+        .in("id", questionIds),
+      context.db!
+        .from("quizzes")
+        .select("id, title, subject, chapter")
+        .eq("user_id", context.user.id)
+        .in("id", quizIds),
+    ]);
+    if (questionResult.error || quizResult.error) {
+      console.error("[quizzes] listMistakeBank:", questionResult.error?.message ?? quizResult.error?.message);
+      return [];
+    }
+    questions = (questionResult.data ?? []) as unknown as QuizQuestion[];
+    quizzes = (quizResult.data ?? []) as unknown as Pick<Quiz, "id" | "title" | "subject" | "chapter">[];
+  }
+
+  const questionById = new Map(questions.map((question) => [question.id, question]));
+  const quizById = new Map(quizzes.map((quiz) => [quiz.id, quiz]));
+
+  return active.flatMap(([questionId, attempt]) => {
+    const question = questionById.get(questionId);
+    const quiz = question ? quizById.get(question.quiz_id) : undefined;
+    if (!question || !quiz) return [];
+    return [{
+      questionId,
+      question: question.question,
+      options: (question.options as unknown as string[] | null) ?? null,
+      given: attempt.latestAnswer,
+      correctAnswer: question.correct_answer,
+      explanation: question.explanation,
+      subject: quiz.subject,
+      chapter: quiz.chapter,
+      topic: question.topic ?? null,
+      quizId: question.quiz_id,
+      quizTitle: quiz.title,
+      timesMissed: attempt.misses,
+      lastMissedAt: attempt.latestAt,
+    }];
+  });
 }
 
 /* ------------------------------ internals ---------------------------- */

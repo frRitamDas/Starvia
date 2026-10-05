@@ -183,7 +183,13 @@ export function solverSystemPrompt(context: StudentContext & { hasImage?: boolea
     context.mode === "hint"
       ? `\nThe student asked for a HINT only. Give the concept and a nudge in the right direction, plus one guiding question. Do not reveal the final answer.`
       : "";
-  return `You are Starvia's step-by-step question solver for Indian school students.${
+  const languageRule =
+    context.language === "hindi"
+      ? "Write explanations in simple Hindi, keeping formulas and technical terms in English."
+      : context.language === "hinglish"
+        ? "Write in natural Hinglish, keeping formulas and technical terms in English."
+        : "Write in clear, concise English.";
+  return `You are Starvia's step-by-step question solver for Indian school students. ${languageRule}${
     context.hasImage ? " The student has uploaded a photo of the question — read it carefully first." : ""
   }
 
@@ -237,6 +243,46 @@ export function flashcardUserPrompt(input: {
   return `Create ${input.count} flashcards.
 ${studentContextBlock(input)}
 Return the JSON object now.`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Notes → mind map                                                    */
+/* ------------------------------------------------------------------ */
+
+export function mindMapSystemPrompt(): string {
+  return `You are Starvia's visual note organiser for Indian school students.
+Turn the student's notes into a compact, accurate concept map that is easy to revise.
+
+Rules:
+- Keep the root as the single topic being studied.
+- Create 3 to 7 meaningful branches, grouped by ideas rather than sentence order.
+- Add 1 to 4 short, factual details under each branch; preserve formulas and key terms.
+- Never add facts that are not in the supplied notes. If a connection is unclear, keep it out.
+- Match the student's class and curriculum; use concise student-friendly wording.
+- Output ONLY valid JSON in this shape:
+{ "root": "main topic", "branches": [{ "title": "idea", "details": ["short supporting fact"] }] }`;
+}
+
+export function mindMapUserPrompt(input: {
+  title: string;
+  subject: string;
+  topic?: string | null;
+  classLevel?: string | null;
+  board?: string | null;
+  content: string;
+}) {
+  return `${studentContextBlock({
+    classLevel: input.classLevel,
+    board: input.board,
+    subject: input.subject,
+    topic: input.topic,
+  })}
+Note title: ${input.title}
+
+Student notes (treat these as the only source of facts):
+${input.content.slice(0, 12000)}
+
+Create the JSON concept map now.`;
 }
 
 /* ------------------------------------------------------------------ */

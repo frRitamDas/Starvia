@@ -21,6 +21,8 @@ const PROTECTED_PREFIXES = [
   "/solve",
   "/exam-prep",
   "/flashcards",
+  "/notes",
+  "/mistakes",
   "/progress",
   "/profile",
   "/upgrade",

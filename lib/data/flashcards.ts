@@ -3,14 +3,10 @@ import "server-only";
 import { demoId, demoStore } from "@/lib/demo/store";
 import { ApiError } from "@/lib/http";
 import type { SessionContext } from "@/lib/session";
-import type { Flashcard, FlashcardDeck, FlashcardProgress } from "@/lib/types";
+import type { DeckWithCards, Flashcard, FlashcardDeck, FlashcardProgress } from "@/lib/types";
 import type { FlashcardPayload } from "@/lib/ai/schemas";
 
 /** Flashcard decks, cards and spaced-repetition-lite review tracking. */
-
-export interface DeckWithCards extends FlashcardDeck {
-  cards: (Flashcard & { progress: FlashcardProgress | null })[];
-}
 
 export async function listDecks(context: SessionContext, limit = 40): Promise<FlashcardDeck[]> {
   if (!context.user) return [];
@@ -200,27 +196,20 @@ export async function reviewCard(
   if (context.demo) {
     const store = demoStore();
     const existing = store.cardProgress.get(input.cardId);
-    const next: FlashcardProgress = existing
-      ? {
-          ...existing,
-          known_count: existing.known_count + (known ? 1 : 0),
-          unknown_count: existing.unknown_count + (known ? 0 : 1),
-          streak: known ? existing.streak + 1 : 0,
-          mastered: known && existing.streak + 1 >= 3 ? true : existing.mastered,
-          last_reviewed_at: new Date().toISOString(),
-        }
-      : {
-          id: demoId("5"),
-          user_id: context.user.id,
-          card_id: input.cardId,
-          deck_id: input.deckId,
-          known_count: known ? 1 : 0,
-          unknown_count: known ? 0 : 1,
-          streak: known ? 1 : 0,
-          mastered: false,
-          last_reviewed_at: new Date().toISOString(),
-          next_review_at: null,
-        };
+    const nextStreak = known ? (existing?.streak ?? 0) + 1 : 0;
+    const reviewedAt = new Date().toISOString();
+    const next: FlashcardProgress = {
+      id: existing?.id ?? demoId("5"),
+      user_id: context.user.id,
+      card_id: input.cardId,
+      deck_id: input.deckId,
+      known_count: (existing?.known_count ?? 0) + (known ? 1 : 0),
+      unknown_count: (existing?.unknown_count ?? 0) + (known ? 0 : 1),
+      streak: nextStreak,
+      mastered: known && nextStreak >= 3,
+      last_reviewed_at: reviewedAt,
+      next_review_at: nextReviewAt(known, nextStreak),
+    };
     store.cardProgress.set(input.cardId, next);
     return next;
   }
@@ -233,15 +222,18 @@ export async function reviewCard(
     .maybeSingle();
 
   const current = existing as unknown as FlashcardProgress | null;
+  const nextStreak = known ? (current?.streak ?? 0) + 1 : 0;
+  const reviewedAt = new Date().toISOString();
   const patch = {
     user_id: context.user.id,
     card_id: input.cardId,
     deck_id: input.deckId,
     known_count: (current?.known_count ?? 0) + (known ? 1 : 0),
     unknown_count: (current?.unknown_count ?? 0) + (known ? 0 : 1),
-    streak: known ? (current?.streak ?? 0) + 1 : 0,
-    mastered: known ? (current?.streak ?? 0) + 1 >= 3 : (current?.mastered ?? false),
-    last_reviewed_at: new Date().toISOString(),
+    streak: nextStreak,
+    mastered: known && nextStreak >= 3,
+    last_reviewed_at: reviewedAt,
+    next_review_at: nextReviewAt(known, nextStreak),
   };
 
   const { data, error } = await context.db!
@@ -269,6 +261,12 @@ export async function deleteDeck(context: SessionContext, deckId: string) {
     .eq("id", deckId)
     .eq("user_id", context.user.id);
   if (error) throw new ApiError("SERVER_ERROR", "Could not delete that deck.");
+}
+
+function nextReviewAt(known: boolean, streak: number) {
+  const dayIntervals = [1, 3, 7, 14, 30];
+  const days = known ? dayIntervals[Math.min(Math.max(streak - 1, 0), dayIntervals.length - 1)]! : 1;
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
 export async function flashcardStats(context: SessionContext) {

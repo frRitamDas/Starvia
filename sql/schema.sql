@@ -442,6 +442,26 @@ create table if not exists public.study_progress (
 create index if not exists study_progress_user_idx on public.study_progress (user_id, last_studied_at desc);
 
 -- ---------------------------------------------------------------------------
+--  study_notes  (private class notes + generated mind maps)
+create table if not exists public.study_notes (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  title       text not null,
+  subject     text not null default 'General',
+  topic       text,
+  content     text not null default '',
+  mind_map    jsonb,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create index if not exists study_notes_user_idx on public.study_notes (user_id, updated_at desc);
+
+drop trigger if exists study_notes_updated_at on public.study_notes;
+create trigger study_notes_updated_at before update on public.study_notes
+  for each row execute function public.set_updated_at();
+
+-- ---------------------------------------------------------------------------
 --  exam_plans  (saved exam preparation packs)
 -- ---------------------------------------------------------------------------
 create table if not exists public.exam_plans (
@@ -519,6 +539,7 @@ alter table public.flashcard_decks    enable row level security;
 alter table public.flashcards         enable row level security;
 alter table public.flashcard_progress enable row level security;
 alter table public.study_progress     enable row level security;
+alter table public.study_notes        enable row level security;
 alter table public.exam_plans         enable row level security;
 alter table public.achievements       enable row level security;
 alter table public.feedback           enable row level security;
@@ -631,6 +652,11 @@ create policy "flashcard_progress_own" on public.flashcard_progress
 -- study_progress ------------------------------------------------------------
 drop policy if exists "study_progress_own" on public.study_progress;
 create policy "study_progress_own" on public.study_progress
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- study_notes ----------------------------------------------------------------
+drop policy if exists "study_notes_own" on public.study_notes;
+create policy "study_notes_own" on public.study_notes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- exam_plans ----------------------------------------------------------------

@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { apiFetch } from "@/lib/client/api";
 import { cn } from "@/lib/utils";
-import type { DeckWithCards } from "@/lib/data/flashcards";
+import type { DeckWithCards } from "@/lib/types";
 
 export function FlashcardStudy({ deck }: { deck: DeckWithCards }) {
   const router = useRouter();
@@ -20,44 +20,76 @@ export function FlashcardStudy({ deck }: { deck: DeckWithCards }) {
   const [index, setIndex] = React.useState(0);
   const [flipped, setFlipped] = React.useState(false);
   const [showHint, setShowHint] = React.useState(false);
-  const [results, setResults] = React.useState<Record<string, "known" | "unknown">>(
-    Object.fromEntries(
-      deck.cards
-        .filter((card) => card.progress?.mastered)
-        .map((card) => [card.id, "known" as const]),
-    ),
-  );
+  const [results, setResults] = React.useState<Record<string, "known" | "unknown">>({});
   const [pending, setPending] = React.useState(false);
+  const reviewPendingRef = React.useRef(false);
 
-  const card = deck.cards[index];
+  const now = Date.now();
+  const studyCards = deck.cards.filter((item) => {
+    const nextReview = item.progress?.next_review_at;
+    return !nextReview || new Date(nextReview).getTime() <= now;
+  });
+  const nextDue = deck.cards
+    .map((item) => item.progress?.next_review_at)
+    .filter((value): value is string => Boolean(value))
+    .sort((left, right) => left.localeCompare(right))[0] ?? null;
+  const card = studyCards[index];
   const masteredCount = deck.cards.filter((item) => item.progress?.mastered).length;
 
   async function review(result: "known" | "unknown") {
-    if (!card || pending) return;
+    if (!card || pending || reviewPendingRef.current || results[card.id]) return;
+    reviewPendingRef.current = true;
     setPending(true);
-    setResults((current) => ({ ...current, [card.id]: result }));
 
     try {
       await apiFetch("/api/flashcards/review", {
         method: "POST",
         json: { cardId: card.id, deckId: deck.id, result },
       });
-      if (index < deck.cards.length - 1) {
+      const updatedResults = { ...results, [card.id]: result };
+      setResults(updatedResults);
+      if (index < studyCards.length - 1) {
         setIndex(index + 1);
         setFlipped(false);
         setShowHint(false);
       } else {
-        const knownNow = Object.values({ ...results, [card.id]: result }).filter(
-          (value) => value === "known",
-        ).length;
-        toast.success(`Deck finished · ${knownNow}/${deck.cards.length} recalled`);
+        const knownNow = Object.values(updatedResults).filter((value) => value === "known").length;
+        toast.success(`Due review complete · ${knownNow}/${studyCards.length} recalled`);
         router.refresh();
       }
     } catch {
       toast.error("Could not save that review. Please try again.");
     } finally {
+      reviewPendingRef.current = false;
       setPending(false);
     }
+  }
+
+  if (studyCards.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-success/10 text-success">
+            <Check className="size-5" />
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-semibold">You&apos;re all caught up</h2>
+            <p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
+              This deck has no cards due right now. Come back for the next spaced review, or keep learning with another tool.
+            </p>
+          </div>
+          {nextDue ? (
+            <Badge variant="outline">
+              Next review {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(nextDue))}
+            </Badge>
+          ) : null}
+          <div className="flex flex-wrap justify-center gap-2 pt-1">
+            <Button asChild variant="outline" size="sm"><Link href="/flashcards">All decks</Link></Button>
+            <Button asChild variant="gradient" size="sm"><Link href="/quiz">Take a quiz</Link></Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (!card) {
@@ -77,7 +109,7 @@ export function FlashcardStudy({ deck }: { deck: DeckWithCards }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
-            Card {index + 1} of {deck.cards.length}
+            Due card {index + 1} of {studyCards.length}
           </Badge>
           <Badge variant="outline">{deck.subject}</Badge>
           {masteredCount > 0 ? (
@@ -90,7 +122,12 @@ export function FlashcardStudy({ deck }: { deck: DeckWithCards }) {
         </p>
       </div>
 
-      <Progress value={((index + 1) / deck.cards.length) * 100} className="h-1.5" />
+      <Progress value={((index + 1) / studyCards.length) * 100} className="h-1.5" />
+      {results[card.id] ? (
+        <p role="status" className="text-center text-xs text-muted-foreground">
+          You marked this card as {results[card.id] === "known" ? "known" : "still learning"} in this session.
+        </p>
+      ) : null}
 
       {/* Card */}
       <button
@@ -98,6 +135,7 @@ export function FlashcardStudy({ deck }: { deck: DeckWithCards }) {
         onClick={() => setFlipped((value) => !value)}
         className="w-full text-left"
         aria-label="Flip card"
+        disabled={pending}
       >
         <Card
           className={cn(
@@ -134,7 +172,7 @@ export function FlashcardStudy({ deck }: { deck: DeckWithCards }) {
               setFlipped(false);
               setShowHint(false);
             }}
-            disabled={index === 0}
+            disabled={index === 0 || pending}
           >
             <ChevronLeft className="size-4" />
             Previous
@@ -143,17 +181,17 @@ export function FlashcardStudy({ deck }: { deck: DeckWithCards }) {
             variant="outline"
             size="sm"
             onClick={() => {
-              setIndex((value) => Math.min(deck.cards.length - 1, value + 1));
+              setIndex((value) => Math.min(studyCards.length - 1, value + 1));
               setFlipped(false);
               setShowHint(false);
             }}
-            disabled={index === deck.cards.length - 1}
+            disabled={index === studyCards.length - 1 || pending}
           >
             Next
             <ChevronRight className="size-4" />
           </Button>
           {card.hint ? (
-            <Button variant="ghost" size="sm" onClick={() => setShowHint(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setShowHint(true)} disabled={pending}>
               <Lightbulb className="size-4" />
               Hint
             </Button>
@@ -164,13 +202,13 @@ export function FlashcardStudy({ deck }: { deck: DeckWithCards }) {
           <Button
             variant="outline"
             onClick={() => review("unknown")}
-            disabled={pending}
+            disabled={pending || Boolean(results[card.id])}
             className="border-destructive/40 text-destructive hover:bg-destructive/[0.06] hover:text-destructive"
           >
             <X className="size-4" />
             Still learning
           </Button>
-          <Button variant="gradient" onClick={() => review("known")} disabled={pending}>
+          <Button variant="gradient" onClick={() => review("known")} disabled={pending || Boolean(results[card.id])}>
             <Check className="size-4" />
             I knew it
           </Button>

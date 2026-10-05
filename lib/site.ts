@@ -10,9 +10,9 @@ export const siteConfig = {
   supportEmail: "support@starvia.study",
   tagline: "A calmer way to learn with AI",
   shortDescription:
-    "Starvia is a focused AI study workspace for Indian students — understand concepts, practise deliberately and prepare with confidence.",
+    "A focused AI study space for Indian learners: clear explanations, voice questions, quizzes, photo solving, revision plans, notes and progress that makes sense.",
   description:
-    "Starvia is a premium AI study platform for Indian school students (CBSE, ICSE and State Board, Classes 6–12). Ask an AI tutor, generate tutorials and quizzes, solve questions from a photo, revise with flashcards and track your progress — all in one focused study workspace.",
+    "Starvia is an AI study platform for Indian school and competitive-exam students. Learn for CBSE, ICSE and State Boards in Classes 6–12; ask in English, Hinglish or Hindi; generate lessons and quizzes; solve questions from a photo; build exam plans, flashcards, private notes and mind maps; review mistakes and track progress.",
   keywords: [
     "AI tutor for students",
     "CBSE study app",
@@ -40,6 +40,8 @@ export const siteConfig = {
       { title: "Question Solver", href: "/solve" },
       { title: "Exam Prep", href: "/exam-prep" },
       { title: "Flashcards", href: "/flashcards" },
+      { title: "Study notebook", href: "/notes" },
+      { title: "Mistake review", href: "/mistakes" },
       { title: "Progress", href: "/progress" },
     ],
     company: [

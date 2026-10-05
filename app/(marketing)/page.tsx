@@ -14,6 +14,8 @@ import {
   GraduationCap,
   Layers3,
   MessageCircleQuestion,
+  NotebookPen,
+  CircleAlert,
   PenLine,
   ScanLine,
   Sparkles,
@@ -51,8 +53,10 @@ const STUDY_MODES = [
   { icon: BookOpen, title: "Learn a topic", text: "Turn a chapter or concept into a structured mini-lesson.", href: "/tutorials" },
   { icon: ClipboardCheck, title: "Test yourself", text: "Build a quiz, submit it, then see exactly what needs work.", href: "/quiz" },
   { icon: ScanLine, title: "Solve a doubt", text: "Type it or photograph the question and learn the method.", href: "/solve" },
-  { icon: CalendarCheck2, title: "Prepare for an exam", text: "Create a focused revision plan around your available time.", href: "/exam-prep" },
+  { icon: CalendarCheck2, title: "Prepare for an exam", text: "Create a focused revision plan around your board, subject and available time.", href: "/exam-prep" },
   { icon: Layers3, title: "Revise faster", text: "Use flashcards and weak-topic recommendations for your next pass.", href: "/flashcards" },
+  { icon: NotebookPen, title: "Keep useful notes", text: "Save your own explanations and turn them into visual mind maps.", href: "/notes" },
+  { icon: CircleAlert, title: "Learn from mistakes", text: "Revisit missed quiz questions and practise the topic again.", href: "/mistakes" },
 ];
 
 const STUDY_LOOP = [
@@ -63,10 +67,10 @@ const STUDY_LOOP = [
 ];
 
 const TRUST_POINTS = [
-  "CBSE, ICSE and State Board ready",
-  "Classes 6–12",
-  "Your profile shapes every AI response",
-  "Free plan with no card required",
+  "CBSE, ICSE and State Boards",
+  "Classes 6–12 · JEE & NEET goals",
+  "English, Hindi and Hinglish",
+  "Free to start",
 ];
 
 export default function LandingPage() {
@@ -98,19 +102,19 @@ export default function LandingPage() {
         <div className="container relative py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-5xl text-center">
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <Eyebrow><Sparkles className="size-3.5" /> Built around how students actually study</Eyebrow>
-              <Badge variant="secondary">CBSE · ICSE · State Board</Badge>
+              <Eyebrow><Sparkles className="size-3.5" /> A study partner that meets you at your level</Eyebrow>
+              <Badge variant="secondary">CBSE · ICSE · State Boards</Badge>
             </div>
 
             <h1 className="mx-auto mt-7 max-w-4xl text-[42px] font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-[78px]">
-              Study with clarity.
+              Big topics,
               <br />
-              <span className="text-muted-foreground">Not more noise.</span>
+              <span className="text-gradient">made clear.</span>
             </h1>
 
             <p className="mx-auto mt-7 max-w-2xl text-[16px] leading-7 text-muted-foreground sm:text-lg">
-              Starvia is a focused AI learning workspace for Indian school students. Ask, understand,
-              practise, revise and track your progress — all around your class, board and goals.
+              Ask in your own words — or by voice. Get an explanation built for your class, practise
+              with a quiz, and keep the ideas that finally make sense in one focused study space.
             </p>
 
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

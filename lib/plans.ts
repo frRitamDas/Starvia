@@ -109,6 +109,7 @@ export const PLANS: Record<PlanId, Plan> = {
         "2 AI tutorials per day",
         "3 AI quizzes per day",
         "1 image question per day",
+        "Private notes, mind maps and mistake review",
         "Streaks, XP and basic progress",
       ],
     },

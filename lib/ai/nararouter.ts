@@ -265,7 +265,7 @@ export async function* streamTextNaraRouter(
   let completionTokens = 0;
   let totalTokens = 0;
   let sawText = false;
-  let model = modelFor(options.model ?? "default");
+  const model = modelFor(options.model ?? "default");
 
   while (true) {
     const { done, value } = await reader.read();

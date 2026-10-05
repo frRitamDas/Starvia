@@ -264,6 +264,18 @@ export type StudyProgressRow = {
   created_at: string;
 };
 
+export type StudyNoteRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  subject: string;
+  topic: string | null;
+  content: string;
+  mind_map: Json | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ExamPlanRow = {
   id: string;
   user_id: string;
@@ -323,6 +335,7 @@ export interface Database {
       flashcards: Table<FlashcardRow, "user_id" | "deck_id" | "front" | "back">;
       flashcard_progress: Table<FlashcardProgressRow, "user_id" | "card_id" | "deck_id">;
       study_progress: Table<StudyProgressRow, "user_id" | "subject" | "topic">;
+      study_notes: Table<StudyNoteRow, "user_id" | "title" | "subject">;
       exam_plans: Table<ExamPlanRow, "user_id" | "board" | "class_level" | "subject" | "exam_type" | "title" | "content">;
       achievements: Table<AchievementRow, "user_id" | "code" | "title">;
       feedback: Table<FeedbackRow, "message">;

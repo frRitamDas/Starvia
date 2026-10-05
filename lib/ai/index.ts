@@ -9,6 +9,8 @@ import {
 import {
   examPrepSystemPrompt,
   examPrepUserPrompt,
+  mindMapSystemPrompt,
+  mindMapUserPrompt,
   flashcardSystemPrompt,
   flashcardUserPrompt,
   quizSystemPrompt,
@@ -25,10 +27,12 @@ import {
   flashcardPayloadSchema,
   normaliseQuiz,
   quizPayloadSchema,
+  studyMindMapSchema,
   tutorialContentSchema,
   type ExamPlanPayload,
   type FlashcardPayload,
   type QuizPayload,
+  type StudyMindMapPayload,
   type TutorialContentPayload,
 } from "@/lib/ai/schemas";
 import { contentKey, withContentCache } from "@/lib/ai/cache";
@@ -329,6 +333,36 @@ export async function generateFlashcards(
   });
 
   return { payload, model, cached };
+}
+
+/* ---------------------------- notes / maps -------------------------- */
+
+export async function generateStudyMindMap(input: {
+  title: string;
+  subject: string;
+  topic?: string | null;
+  classLevel?: string | null;
+  board?: string | null;
+  content: string;
+}): Promise<{ payload: StudyMindMapPayload; model: string; tokens: number }> {
+  const { data, result } = await generateJson<unknown>({
+    system: mindMapSystemPrompt(),
+    messages: [{ role: "user", parts: [{ text: mindMapUserPrompt(input) }] }],
+    model: "fast",
+    temperature: 0.35,
+    maxOutputTokens: 3072,
+    label: "study_mind_map",
+  });
+
+  const parsed = studyMindMapSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new AiError(
+      "bad_response",
+      "AI returned an incomplete mind map. Please try again.",
+      parsed.error.issues[0]?.message,
+    );
+  }
+  return { payload: parsed.data, model: result.model, tokens: result.totalTokens };
 }
 
 /* ----------------------------- exam prep ---------------------------- */

@@ -206,6 +206,22 @@ export interface QuizAttempt {
   created_at: string;
 }
 
+export interface MistakeReviewItem {
+  questionId: string;
+  question: string;
+  options: string[] | null;
+  given: string;
+  correctAnswer: string;
+  explanation: string;
+  subject: string;
+  chapter: string | null;
+  topic: string | null;
+  quizId: string;
+  quizTitle: string;
+  timesMissed: number;
+  lastMissedAt: string;
+}
+
 export interface Flashcard {
   id: string;
   user_id: string;
@@ -245,6 +261,10 @@ export interface FlashcardProgress {
   mastered: boolean;
 }
 
+export interface DeckWithCards extends FlashcardDeck {
+  cards: (Flashcard & { progress: FlashcardProgress | null })[];
+}
+
 export type TopicStatus = "not_started" | "learning" | "practiced" | "mastered";
 
 export interface StudyProgress {
@@ -258,6 +278,28 @@ export interface StudyProgress {
   minutes_spent: number;
   last_studied_at: string | null;
   created_at: string;
+}
+
+export interface StudyMindMapBranch {
+  title: string;
+  details: string[];
+}
+
+export interface StudyMindMap {
+  root: string;
+  branches: StudyMindMapBranch[];
+}
+
+export interface StudyNote {
+  id: string;
+  user_id: string;
+  title: string;
+  subject: string;
+  topic: string | null;
+  content: string;
+  mind_map: StudyMindMap | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Achievement {

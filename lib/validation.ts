@@ -132,6 +132,7 @@ export const solveSchema = z
     imageMimeType: z.enum(["image/png", "image/jpeg", "image/webp", "image/heic"]).optional(),
     subject: trimmed(60).optional().nullable(),
     mode: z.enum(["explain", "hint"]).optional().default("explain"),
+    language: z.enum(["english", "hinglish", "hindi"]).optional().default("english"),
   })
   .refine((data) => Boolean(data.question?.trim()) || Boolean(data.imageBase64), {
     message: "Type a question or upload a photo of it.",
@@ -193,6 +194,19 @@ export const flashcardReviewSchema = z.object({
   deckId: z.string().uuid(),
   result: z.enum(["known", "unknown"]),
 });
+
+/* ------------------------------- notes ------------------------------ */
+
+export const studyNoteCreateSchema = z.object({
+  title: trimmed(120).min(1, "Give your note a title."),
+  subject: trimmed(60).min(1).default("General"),
+  topic: trimmed(160).optional().nullable(),
+  content: z.string().max(20000, "Notes can be up to 20,000 characters."),
+});
+
+export const studyNoteUpdateSchema = studyNoteCreateSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, "Change at least one field.");
 
 /* ------------------------------ payments ---------------------------- */
 

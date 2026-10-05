@@ -32,6 +32,18 @@ const DETAILS: Record<
     ],
     footnote: "Best for daily doubts, homework help and concept building.",
   },
+  "Ask by voice": {
+    id: "voice",
+    headline: "Speak the question instead of typing it",
+    points: [
+      "Use the browser's built-in speech recognition from the tutor and solver",
+      "Choose an English or Hindi recognition hint and review the transcript first",
+      "Send only after you are happy with what was recognised",
+      "The microphone is requested only while voice capture is active",
+      "If your browser does not support speech recognition, typing stays available",
+    ],
+    footnote: "Voice input is available on supported browsers and works with the existing tutor and solver flows.",
+  },
   "Structured AI tutorials": {
     id: "tutorials",
     headline: "Tutorials that read like a well-planned class",
@@ -54,7 +66,7 @@ const DETAILS: Record<
       "Score, per-question review and the exact topics you got wrong",
       "Recommended revision topics at the end of every attempt",
     ],
-    footnote: "Quiz attempts feed your weak-topic detection and progress charts.",
+    footnote: "Quiz attempts feed your weak-topic detection, mistake bank and progress charts.",
   },
   "Question solver with photo": {
     id: "solver",
@@ -90,6 +102,30 @@ const DETAILS: Record<
       "Works perfectly on a phone between classes",
     ],
     footnote: "AI flashcard generation is part of Pro and Ultra; manual decks are free.",
+  },
+  "Private notes & mind maps": {
+    id: "notes",
+    headline: "Keep the ideas you want to remember",
+    points: [
+      "Write subject- and topic-tagged notes in a searchable notebook",
+      "Use Markdown and preview your notes before saving",
+      "Export notes as Markdown so your work remains portable",
+      "Turn saved content into an AI-created visual mind map",
+      "Private notes are protected by the same account-level access controls as your study history",
+    ],
+    footnote: "Mind maps are generated from the note you choose and use the daily AI study allowance.",
+  },
+  "A useful mistake bank": {
+    id: "mistakes",
+    headline: "Make the next attempt better than the last",
+    points: [
+      "Missed quiz questions are collected with your latest answer",
+      "Open the correct answer and its explanation when you are ready",
+      "Repeated misses are easy to spot and prioritise",
+      "Ask the tutor to explain the same question another way",
+      "Retake the original quiz or make a fresh quiz on the weak topic",
+    ],
+    footnote: "A question clears from the active list when your latest recorded attempt is correct.",
   },
   "Progress you can see": {
     id: "progress",

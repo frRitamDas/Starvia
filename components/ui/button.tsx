@@ -12,7 +12,7 @@ const buttonVariants = cva(
         default:
           "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         gradient:
-          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+          "bg-brand-gradient text-white shadow-soft hover:brightness-105",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:

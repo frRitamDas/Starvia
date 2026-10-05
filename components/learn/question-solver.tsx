@@ -3,10 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Loader2, ScanLine, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { BookmarkPlus, Check, ImagePlus, Loader2, ScanLine, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Markdown } from "@/components/learn/markdown";
+import { VoiceInputButton } from "@/components/learn/voice-input-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,12 +44,17 @@ export function QuestionSolver({
   const [question, setQuestion] = React.useState("");
   const [subject, setSubject] = React.useState("Auto-detect");
   const [style, setStyle] = React.useState<"explain" | "hint">("explain");
+  const [language, setLanguage] = React.useState<"english" | "hinglish" | "hindi">("english");
   const [image, setImage] = React.useState<{ dataUrl: string; base64: string; mime: string } | null>(
     null,
   );
   const [pending, setPending] = React.useState(false);
   const [answer, setAnswer] = React.useState<string | null>(null);
+  const [solutionQuestion, setSolutionQuestion] = React.useState<string | null>(null);
+  const [resolvedSubject, setResolvedSubject] = React.useState<string | null>(null);
   const [feature, setFeature] = React.useState<"image" | "solver">("solver");
+  const [savingNote, setSavingNote] = React.useState(false);
+  const [savedNoteId, setSavedNoteId] = React.useState<string | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
   const exhausted = mode === "image" ? imageRemaining <= 0 : solverRemaining <= 0;
@@ -88,8 +94,15 @@ export function QuestionSolver({
       return;
     }
 
+    const promptForNote =
+      mode === "image"
+        ? `Question from photo${question.trim() ? `\nStudent context: ${question.trim()}` : ""}`
+        : question.trim();
+
     setPending(true);
     setAnswer(null);
+    setSolutionQuestion(null);
+    setSavedNoteId(null);
     try {
       const data = await apiFetch<{
         solution: { markdown: string; subject: string | null };
@@ -104,9 +117,12 @@ export function QuestionSolver({
           imageMimeType: mode === "image" ? image?.mime : null,
           subject: subject === "Auto-detect" ? null : subject,
           mode: style,
+          language,
         },
       });
       setAnswer(data.solution.markdown);
+      setSolutionQuestion(promptForNote);
+      setResolvedSubject(data.solution.subject);
       setFeature(data.feature);
       if (data.xpGained > 0) toast.success(`+${data.xpGained} XP`);
       (data.achievements ?? []).forEach((title) => toast.success(`Achievement: ${title}`));
@@ -120,6 +136,31 @@ export function QuestionSolver({
       }
     } finally {
       setPending(false);
+    }
+  }
+
+  async function saveSolution() {
+    if (!answer || savingNote || savedNoteId) return;
+    const prompt = solutionQuestion || "Question solved from a photo";
+    const title = `Solved question — ${prompt.replace(/\s+/g, " ").slice(0, 95)}`;
+    const content = `# ${title}\n\n## Question\n${prompt}\n\n## Solution\n\n${answer}`;
+    setSavingNote(true);
+    try {
+      const data = await apiFetch<{ note: { id: string } }>("/api/notes", {
+        method: "POST",
+        json: {
+          title: title.slice(0, 120),
+          subject: resolvedSubject || (subject === "Auto-detect" ? "General" : subject),
+          topic: null,
+          content,
+        },
+      });
+      setSavedNoteId(data.note.id);
+      toast.success("Solution saved to your study notebook");
+    } catch (error) {
+      toast.error(error instanceof ApiClientError ? error.message : "Could not save that solution.");
+    } finally {
+      setSavingNote(false);
     }
   }
 
@@ -203,6 +244,19 @@ export function QuestionSolver({
             </div>
           )}
 
+          <div className="flex items-center gap-2">
+            <VoiceInputButton
+              language={language}
+              disabled={pending || exhausted}
+              onTranscript={(transcript) =>
+                setQuestion((current) => `${current.trimEnd()}${current.trim() ? " " : ""}${transcript}`)
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Ask by speaking · transcription is handled by your browser
+            </p>
+          </div>
+
           <div className="flex flex-wrap items-end gap-3">
             <div className="w-full space-y-1.5 sm:w-48">
               <label className="text-xs font-medium text-muted-foreground" htmlFor="solver-subject">
@@ -238,6 +292,25 @@ export function QuestionSolver({
               </Select>
             </div>
 
+            <div className="w-full space-y-1.5 sm:w-40">
+              <label className="text-xs font-medium text-muted-foreground" htmlFor="solver-language">
+                Response language
+              </label>
+              <Select
+                value={language}
+                onValueChange={(value) => setLanguage(value as "english" | "hinglish" | "hindi")}
+              >
+                <SelectTrigger id="solver-language">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="english">English</SelectItem>
+                  <SelectItem value="hinglish">Hinglish</SelectItem>
+                  <SelectItem value="hindi">Hindi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <Button variant="gradient" onClick={solve} disabled={pending} className="w-full sm:w-auto">
               {pending ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
               {pending ? "Solving…" : "Solve it"}
@@ -258,8 +331,18 @@ export function QuestionSolver({
               <Sparkles className="size-4 text-primary" />
               Solution
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {feature === "image" ? <Badge variant="outline">from photo</Badge> : null}
+              {savedNoteId ? (
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/notes"><Check className="size-4" /> Saved · open notebook</Link>
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={saveSolution} disabled={savingNote}>
+                  {savingNote ? <Loader2 className="size-4 animate-spin" /> : <BookmarkPlus className="size-4" />}
+                  Save solution
+                </Button>
+              )}
               <Button variant="ghost" size="sm" asChild>
                 <Link href={`/tutor?q=${encodeURIComponent("Can you explain this differently?")}`}>
                   Ask a follow-up

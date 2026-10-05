@@ -15,6 +15,7 @@ import type {
   QuizQuestion,
   Quiz as DomainQuiz,
   StudyProgress,
+  StudyNote,
   Subscription,
   Tutorial as DomainTutorial,
   Achievement,
@@ -27,6 +28,7 @@ export type {
   QuizAttempt,
   QuizQuestion,
   StudyProgress,
+  StudyNote,
   Achievement,
 };
 

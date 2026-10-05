@@ -98,7 +98,7 @@ const config: Config = {
         "grid-fade":
           "linear-gradient(to right, hsl(var(--border) / 0.6) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.6) 1px, transparent 1px)",
         "brand-gradient":
-          "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--foreground) / 0.82) 100%)",
+          "linear-gradient(135deg, #6759e8 0%, #5968ef 56%, #21a7c7 100%)",
       },
       keyframes: {
         "accordion-down": {

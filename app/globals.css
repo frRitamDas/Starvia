@@ -4,27 +4,27 @@
 
 @layer base {
   :root {
-    /* Light theme — monochrome paper */
-    --background: 220 33% 99%;
-    --foreground: 224 40% 12%;
+    /* Light theme — clear paper with a confident indigo accent */
+    --background: 225 40% 99%;
+    --foreground: 230 34% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 40% 12%;
+    --card-foreground: 230 34% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 40% 12%;
+    --popover-foreground: 230 34% 12%;
 
-    --primary: 0 0% 8%;
+    --primary: 250 74% 56%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 12%;
+    --secondary: 246 70% 97%;
+    --secondary-foreground: 237 31% 18%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 42%;
+    --muted: 225 28% 96%;
+    --muted-foreground: 225 12% 43%;
 
-    --accent: 0 0% 94%;
-    --accent-foreground: 0 0% 18%;
+    --accent: 246 70% 95%;
+    --accent-foreground: 246 45% 29%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -35,9 +35,9 @@
     --warning: 32 92% 44%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 0 0% 88%;
-    --input: 0 0% 86%;
-    --ring: 0 0% 15%;
+    --border: 225 20% 89%;
+    --input: 225 18% 86%;
+    --ring: 250 74% 56%;
 
     --radius: 0.75rem;
     --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
@@ -47,27 +47,27 @@
   }
 
   .dark {
-    /* Dark theme — monochrome study-lamp black */
-    --background: 0 0% 5%;
-    --foreground: 0 0% 96%;
+    /* Dark theme — deep ink keeps the same indigo identity */
+    --background: 232 31% 8%;
+    --foreground: 226 26% 95%;
 
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 96%;
+    --card: 231 27% 11%;
+    --card-foreground: 226 26% 95%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 231 27% 11%;
+    --popover-foreground: 226 26% 95%;
 
-    --primary: 0 0% 96%;
-    --primary-foreground: 0 0% 5%;
+    --primary: 250 91% 72%;
+    --primary-foreground: 232 33% 10%;
 
-    --secondary: 0 0% 13%;
-    --secondary-foreground: 0 0% 92%;
+    --secondary: 230 25% 15%;
+    --secondary-foreground: 226 20% 92%;
 
-    --muted: 0 0% 13%;
-    --muted-foreground: 0 0% 64%;
+    --muted: 230 23% 15%;
+    --muted-foreground: 222 13% 68%;
 
-    --accent: 0 0% 16%;
-    --accent-foreground: 0 0% 92%;
+    --accent: 247 34% 19%;
+    --accent-foreground: 226 22% 94%;
 
     --destructive: 0 68% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -78,9 +78,9 @@
     --warning: 36 92% 60%;
     --warning-foreground: 30 70% 10%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 22%;
-    --ring: 0 0% 92%;
+    --border: 228 18% 21%;
+    --input: 228 18% 24%;
+    --ring: 250 91% 72%;
   }
 }
 
@@ -255,7 +255,7 @@
 
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--muted-foreground)));
+    background-image: linear-gradient(100deg, hsl(var(--primary)), #0ea5e9 115%);
   }
 
   .premium-grain {

@@ -11,13 +11,13 @@ export const FAQS: FaqItem[] = [
     category: "Getting started",
     question: "What is Starvia?",
     answer:
-      "Starvia is an AI study workspace for Indian school students. You get an AI tutor that explains at your class level, auto-generated tutorials and quizzes, a step-by-step question solver (type it or photograph it), exam revision plans, flashcards and progress tracking — all in one place.",
+      "Starvia is an AI study workspace for Indian students. You get a tutor that explains at your level, tutorials and quizzes, voice input, a photo question solver, exam plans, flashcards, a private notes notebook with mind maps, mistake review and progress tracking — all in one place.",
   },
   {
     category: "Getting started",
     question: "Which classes and boards are supported?",
     answer:
-      "Classes 6 to 12, with CBSE, ICSE/ISC and State Board syllabi. During onboarding you pick your class, board, subjects and optional exam target, and every explanation, quiz and revision plan is written for that context. You can change these at any time from your profile.",
+      "Classes 6 to 12, with CBSE, ICSE/ISC and State Board syllabi, plus support for competitive exam targets such as JEE and NEET. During onboarding you pick your class, board, subjects and goal so explanations, quizzes and revision plans can use that context. You can change it from your profile.",
   },
   {
     category: "Getting started",
@@ -36,6 +36,18 @@ export const FAQS: FaqItem[] = [
     question: "Can I ask questions from a photo of my textbook?",
     answer:
       "Yes. On the Question Solver page you can upload or photograph a question. The AI reads the image, identifies the subject and topic, explains the concept, solves it step by step and gives you a similar practice question.",
+  },
+  {
+    category: "AI & subjects",
+    question: "Can I ask Starvia by speaking?",
+    answer:
+      "Yes. The tutor and question solver can use your browser's speech-to-text support. Choose English, Hinglish or Hindi, review the transcript in the composer, then send it when it looks right. Microphone access is only used while you are recording.",
+  },
+  {
+    category: "AI & subjects",
+    question: "Can I save my own notes and make mind maps?",
+    answer:
+      "Yes. Your private Study Notebook supports Markdown notes, search, export and subject tags. Turn a saved note into an AI mind map to organise the ideas for revision; generated maps use the same daily AI study allowance shown in your workspace.",
   },
   {
     category: "AI & subjects",

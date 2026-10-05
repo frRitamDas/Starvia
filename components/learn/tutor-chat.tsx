@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   BookOpenCheck,
+  BookmarkPlus,
   Check,
   Copy,
   Loader2,
@@ -19,6 +20,7 @@ import {
 import { toast } from "sonner";
 
 import { Markdown } from "@/components/learn/markdown";
+import { VoiceInputButton } from "@/components/learn/voice-input-button";
 import { EmptyState } from "@/components/app/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -414,6 +416,7 @@ export function TutorChat({
             <MessageBubble
               key={message.id}
               message={message}
+              subject={subject}
               onRate={rate}
               onRegenerate={() => send({ regenerateMessageId: message.id })}
               disabled={streaming}
@@ -478,6 +481,14 @@ export function TutorChat({
               className="max-h-40 min-h-[46px] resize-none"
               aria-label="Your question"
             />
+            <VoiceInputButton
+              language={language as "english" | "hinglish" | "hindi"}
+              disabled={streaming || exhausted}
+              className="size-[46px] shrink-0"
+              onTranscript={(transcript) =>
+                setInput((current) => `${current.trimEnd()}${current.trim() ? " " : ""}${transcript}`)
+              }
+            />
             <Button
               variant="gradient"
               size="icon"
@@ -522,6 +533,9 @@ export function TutorChat({
               </Link>
             ) : null}
           </div>
+          <p className="mt-2 text-[10.5px] leading-4 text-muted-foreground">
+            Voice input is transcribed by your browser; Starvia receives text only when you send it.
+          </p>
         </div>
       </Card>
     </div>
@@ -530,16 +544,37 @@ export function TutorChat({
 
 function MessageBubble({
   message,
+  subject,
   onRate,
   onRegenerate,
   disabled,
 }: {
   message: ChatMessage;
+  subject: string;
   onRate: (id: string, rating: 1 | -1) => void;
   onRegenerate: () => void;
   disabled: boolean;
 }) {
   const [copied, setCopied] = React.useState(false);
+  const [savingNote, setSavingNote] = React.useState(false);
+
+  async function saveToNotebook() {
+    setSavingNote(true);
+    try {
+      const firstLine = message.content.split("\n").find((line) => line.trim()) ?? "";
+      const heading = message.content.match(/^#{1,2}\s+(.+)$/m)?.[1] ?? firstLine;
+      const title = heading.replace(/^#+\s*/, "").replace(/[*_`]/g, "").trim().slice(0, 110) || "Tutor explanation";
+      await apiFetch("/api/notes", {
+        method: "POST",
+        json: { title, subject, topic: null, content: message.content },
+      });
+      toast.success("Saved to your study notebook");
+    } catch (error) {
+      toast.error(error instanceof ApiClientError ? error.message : "Could not save this answer.");
+    } finally {
+      setSavingNote(false);
+    }
+  }
 
   if (message.role === "user") {
     return (
@@ -561,6 +596,16 @@ function MessageBubble({
           <Markdown>{message.content}</Markdown>
         </div>
         <div className="flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Save answer to your study notebook"
+            title="Save to your study notebook"
+            onClick={saveToNotebook}
+            disabled={savingNote}
+          >
+            {savingNote ? <Loader2 className="size-3.5 animate-spin" /> : <BookmarkPlus className="size-3.5" />}
+          </Button>
           <Button
             variant="ghost"
             size="icon-sm"

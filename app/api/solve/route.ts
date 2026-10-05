@@ -78,6 +78,7 @@ export async function POST(request: Request) {
             subject: body.subject ?? profile.subjects?.[0] ?? null,
             learningLevel: profile.learning_level,
             examTarget: profile.exam_target,
+            language: body.language,
           },
         },
         context.admin ?? context.db,

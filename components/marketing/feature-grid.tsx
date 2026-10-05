@@ -3,9 +3,12 @@ import {
   BarChart3,
   BookOpenCheck,
   CalendarClock,
+  CircleAlert,
   ClipboardList,
   Flame,
   Layers,
+  Mic,
+  NotebookPen,
   ScanLine,
   Sparkles,
 } from "lucide-react";
@@ -24,8 +27,15 @@ export const FEATURES: Feature[] = [
     icon: Sparkles,
     title: "AI tutor that teaches",
     description:
-      "Explains concepts step by step at your class level — with analogies, worked examples, exam tips and one practice question to lock it in.",
+      "Explains concepts at your class level, remembers the conversation and lets you ask follow-ups in English, Hinglish or Hindi.",
     href: "/features#tutor",
+  },
+  {
+    icon: Mic,
+    title: "Ask by voice",
+    description:
+      "Speak a question in your browser, review the transcription in the composer and send only when it looks right.",
+    href: "/tutor",
   },
   {
     icon: BookOpenCheck,
@@ -38,7 +48,7 @@ export const FEATURES: Feature[] = [
     icon: ClipboardList,
     title: "Adaptive quizzes",
     description:
-      "MCQs, true/false and short answers generated from your syllabus. Score, explanations and weak topics appear only after you submit.",
+      "Syllabus-aware MCQs, true/false and short answers. Scores, explanations and weak topics appear after you submit — missed questions return in your review bank.",
     href: "/features#quiz",
   },
   {
@@ -59,8 +69,22 @@ export const FEATURES: Feature[] = [
     icon: Layers,
     title: "Flashcards that stick",
     description:
-      "Generate decks from any topic, flip through them on your phone, and Starvia tracks what you know versus what needs another pass.",
+      "Generate decks from any topic, flip through them on your phone, and let spaced reviews bring due cards back when they need another pass.",
     href: "/features#flashcards",
+  },
+  {
+    icon: NotebookPen,
+    title: "Private notes & mind maps",
+    description:
+      "Write searchable notes in Markdown, export them, then organise the ideas into a visual mind map for revision.",
+    href: "/notes",
+  },
+  {
+    icon: CircleAlert,
+    title: "A useful mistake bank",
+    description:
+      "Review missed quiz questions with the correct answer and explanation, then jump back into a focused practice session.",
+    href: "/mistakes",
   },
   {
     icon: BarChart3,
