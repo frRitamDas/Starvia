@@ -394,7 +394,7 @@ export async function activatePlan(
   context: SessionContext,
   input: {
     plan: PlanId;
-    provider: Subscription["provider"];
+    provider: Exclude<Subscription["provider"], "free">;
     providerSubscriptionId?: string | null;
     providerPaymentId?: string | null;
     providerPlanId?: string | null;
@@ -528,7 +528,7 @@ export async function cancelPlan(
   await upsertSubscription(context, {
     plan: keepUntilEnd ? (subscription.plan as PlanId) : "free",
     status: keepUntilEnd ? "active" : "cancelled",
-    provider: subscription.provider,
+    provider: subscription.provider === "mock" ? "mock" : "razorpay",
     providerSubscriptionId,
     providerPaymentId: subscription.provider_payment_id,
     amountInr: subscription.amount_inr ?? 0,
