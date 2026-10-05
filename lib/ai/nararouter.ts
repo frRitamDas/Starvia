@@ -1,5 +1,3 @@
-import "server-only";
-
 import { serverEnv } from "@/lib/env";
 import { AiError } from "@/lib/ai/types";
 import type {
