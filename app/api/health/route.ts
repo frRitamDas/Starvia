@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { integrationStatus } from "@/lib/env";
+import { integrationStatus, razorpayRecurringPlanStatus } from "@/lib/env";
 
 /**
  * Deployment health check. Reports which integrations are configured
@@ -8,19 +8,26 @@ import { integrationStatus } from "@/lib/env";
  */
 export async function GET() {
   const status = integrationStatus();
+  const recurringPlans = razorpayRecurringPlanStatus();
+  const warnings: string[] = [
+    ...(status.supabase ? [] : ["Supabase is not configured — auth and data storage are disabled."]),
+    ...(status.naraRouter || status.gemini ? [] : ["No AI provider is configured — AI study services are unavailable."]),
+    ...(status.razorpay ? [] : ["Razorpay keys are missing — upgrades are disabled."]),
+    ...(status.razorpay && Object.values(recurringPlans).some((configured) => !configured)
+      ? ["One or more recurring Razorpay plan ids are missing — the affected monthly/yearly checkout must stay disabled until configured."]
+      : []),
+  ];
   return NextResponse.json(
     {
-      ok: true,
+      ok: warnings.length === 0,
+      data:
       data: {
         app: "starvia",
         version: process.env.NEXT_PUBLIC_APP_VERSION ?? "1.0.0",
         time: new Date().toISOString(),
         integrations: status,
-        warnings: [
-          ...(status.supabase ? [] : ["Supabase is not configured — auth and data storage are disabled."]),
-          ...(status.gemini ? [] : ["GEMINI_API_KEY is missing — AI features will return NOT_CONFIGURED."]),
-          ...(status.razorpay ? [] : ["Razorpay keys are missing — upgrades are disabled."]),
-        ],
+        recurringPlans,
+        warnings,
       },
     },
     { headers: { "Cache-Control": "no-store" } },
