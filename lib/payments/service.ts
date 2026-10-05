@@ -128,6 +128,7 @@ export async function startCheckout(
         keyId: null,
         plan: input.plan,
         amountInr,
+        billing: input.billing,
         message:
           "Razorpay is not configured on this deployment. This is a development activation — no money moves.",
       };
