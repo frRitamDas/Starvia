@@ -62,7 +62,7 @@ const config: Config = {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
-        // Starvia brand scale — deep indigo → violet → aqua accent.
+        // Legacy utility scale retained for compatibility; the V1 UI uses monochrome tokens.
         brand: {
           50: "#eef2ff",
           100: "#e0e7ff",
@@ -98,7 +98,7 @@ const config: Config = {
         "grid-fade":
           "linear-gradient(to right, hsl(var(--border) / 0.6) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.6) 1px, transparent 1px)",
         "brand-gradient":
-          "linear-gradient(120deg, hsl(var(--primary)) 0%, #7c3aed 48%, #0ea5e9 100%)",
+          "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--foreground) / 0.82) 100%)",
       },
       keyframes: {
         "accordion-down": {
