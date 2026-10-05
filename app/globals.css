@@ -333,7 +333,6 @@
     60%, 100% { transform: translateX(100%); }
   }
 }
-}
 
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
