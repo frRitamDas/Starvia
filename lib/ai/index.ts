@@ -53,6 +53,7 @@ export interface TutorRequest {
   history: TutorTurn[];
   message: string;
   regenerate?: boolean;
+  signal?: AbortSignal;
 }
 
 /** Builds the Gemini conversation for the tutor. Keeps only useful history (cost control). */
