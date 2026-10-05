@@ -64,11 +64,12 @@ export function AppSidebar({ footer }: { footer?: React.ReactNode }) {
             href={item.href}
             aria-current={isActive(pathname, item.href) ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground",
-              isActive(pathname, item.href) && "bg-accent/70 text-foreground",
+              "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:translate-x-0.5 hover:bg-accent/60 hover:text-foreground",
+              isActive(pathname, item.href) && "bg-accent/70 text-foreground shadow-sm",
             )}
           >
-            <item.icon className="size-4" />
+            <span className={cn("absolute left-0 h-5 w-0.5 rounded-full bg-primary opacity-0 transition-opacity", isActive(pathname, item.href) && "opacity-100")} />
+            <item.icon className="size-4 transition-transform duration-200 group-hover:scale-105" />
             {item.title}
           </Link>
         ))}
