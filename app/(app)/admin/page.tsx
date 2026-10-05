@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { AiDiagnosticsCard } from "@/components/admin/ai-diagnostics-card";
 import { BarChart, ProgressRing } from "@/components/learn/stat-charts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -140,6 +141,8 @@ export default async function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AiDiagnosticsCard />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
