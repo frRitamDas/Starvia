@@ -33,7 +33,7 @@ export const publicEnv = {
 
 export const serverEnv = {
   get aiProvider() {
-    const provider = read("AI_PROVIDER", "gemini").toLowerCase();
+    const provider = read("AI_PROVIDER", "nararouter").toLowerCase();
     return provider === "nararouter" ? "nararouter" : "gemini";
   },
   get naraRouterApiKey() {
@@ -46,7 +46,7 @@ export const serverEnv = {
   },
   get naraRouterModelDefault() {
     assertServer("naraRouterModelDefault");
-    return read("NARAROUTER_MODEL_DEFAULT", "agnes-2.5-flash");
+    return read("NARAROUTER_MODEL_DEFAULT", "auto/bynara");
   },
   get geminiApiKey() {
     assertServer("geminiApiKey");
