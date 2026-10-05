@@ -465,7 +465,7 @@ export function BillingPanel({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Cancel your {PLANS[currentPlan].name} plan?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    You&apos;ll keep every Pro feature until the end of the period you already paid for.
+                    You&apos;ll keep your paid features until the end of the period you already paid for.
                     After that your account returns to the free plan — no further charges.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
