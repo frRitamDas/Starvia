@@ -23,7 +23,7 @@ function bool(name: string, fallback = false): boolean {
 
 export const publicEnv = {
   supabaseUrl: read("NEXT_PUBLIC_SUPABASE_URL"),
-  supabaseAnonKey: read("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  supabaseAnonKey: read("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") || read("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   siteUrl: read("NEXT_PUBLIC_SITE_URL", "http://localhost:3000").replace(/\/$/, ""),
   razorpayKeyId: read("NEXT_PUBLIC_RAZORPAY_KEY_ID"),
   /** Explicit opt-in only. Never turns on by itself in production. */
@@ -51,7 +51,7 @@ export const serverEnv = {
   },
   get supabaseServiceRoleKey() {
     assertServer("supabaseServiceRoleKey");
-    return read("SUPABASE_SERVICE_ROLE_KEY");
+    return read("SUPABASE_SECRET_KEY") || read("SUPABASE_SERVICE_ROLE_KEY");
   },
   get razorpayKeyId() {
     return read("RAZORPAY_KEY_ID") || read("NEXT_PUBLIC_RAZORPAY_KEY_ID");
