@@ -693,6 +693,23 @@ export async function handleWebhookEvent(event: {
       return { handled: true, action: eventName, userId };
     }
 
+    case "subscription.resumed": {
+      const userId = subscriptionEntity?.notes?.user_id ?? null;
+      if (!userId) return { handled: false, action: "missing_notes" };
+      await admin
+        .from("subscriptions")
+        .update({
+          status: "active",
+          cancel_at_period_end: false,
+          cancelled_at: null,
+          current_period_end: subscriptionEntity?.current_end
+            ? new Date(subscriptionEntity.current_end * 1000).toISOString()
+            : undefined,
+        })
+        .eq("user_id", userId);
+      return { handled: true, action: eventName, userId };
+    }
+
     case "subscription.cancelled":
     case "subscription.completed":
     case "subscription.expired": {
@@ -702,10 +719,19 @@ export async function handleWebhookEvent(event: {
       const providerEnd = subscriptionEntity?.current_end
         ? new Date(subscriptionEntity.current_end * 1000)
         : null;
+      const { data: localSubscription } = await admin
+        .from("subscriptions")
+        .select("current_period_end")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const localEnd = localSubscription?.current_period_end
+        ? new Date(localSubscription.current_period_end)
+        : null;
+      const effectiveEnd = providerEnd ?? localEnd;
       const stillActiveAtCycleEnd =
         eventName === "subscription.cancelled" &&
-        providerEnd &&
-        providerEnd.getTime() > Date.now();
+        effectiveEnd &&
+        effectiveEnd.getTime() > Date.now();
 
       if (stillActiveAtCycleEnd) {
         await admin
@@ -714,7 +740,7 @@ export async function handleWebhookEvent(event: {
             status: "cancelled",
             cancel_at_period_end: true,
             cancelled_at: new Date().toISOString(),
-            current_period_end: providerEnd.toISOString(),
+            current_period_end: effectiveEnd.toISOString(),
           })
           .eq("user_id", userId);
       } else {
@@ -724,7 +750,7 @@ export async function handleWebhookEvent(event: {
             plan: "free",
             status: eventName === "subscription.completed" ? "completed" : "expired",
             cancelled_at: new Date().toISOString(),
-            current_period_end: providerEnd?.toISOString() ?? new Date().toISOString(),
+            current_period_end: effectiveEnd?.toISOString() ?? new Date().toISOString(),
             cancel_at_period_end: false,
             amount_inr: null,
           })
