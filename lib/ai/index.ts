@@ -88,6 +88,7 @@ export async function* generateTutorResponse(
     temperature: 0.65,
     maxOutputTokens: 2048,
     label: "tutor",
+    signal: request.signal,
   });
 
   let full = "";
