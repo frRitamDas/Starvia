@@ -148,6 +148,11 @@ async function request(
     () => controller.abort(),
     options.timeoutMs ?? serverEnv.aiTimeoutMs,
   );
+  const abortUpstream = () => controller.abort();
+  if (options.signal) {
+    if (options.signal.aborted) controller.abort();
+    else options.signal.addEventListener("abort", abortUpstream, { once: true });
+  }
 
   try {
     return await fetch(`${baseUrl()}/chat/completions`, {
@@ -163,6 +168,9 @@ async function request(
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
+      if (options.signal?.aborted) {
+        throw new AiError("unavailable", "The response was cancelled before it finished.");
+      }
       throw new AiError("timeout", "AI took too long to respond. Please try again.");
     }
 
@@ -172,6 +180,7 @@ async function request(
     );
   } finally {
     clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", abortUpstream);
   }
 }
 
