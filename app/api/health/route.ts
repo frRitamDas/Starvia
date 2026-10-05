@@ -20,7 +20,6 @@ export async function GET() {
   return NextResponse.json(
     {
       ok: warnings.length === 0,
-      data:
       data: {
         app: "starvia",
         version: process.env.NEXT_PUBLIC_APP_VERSION ?? "1.0.0",
