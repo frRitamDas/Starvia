@@ -591,7 +591,14 @@ export async function handleWebhookEvent(event: {
 
   const eventName = event.event;
   const subscriptionEntity = pick(event.payload, ["subscription", "entity"]) as
-    | { id?: string; status?: string; current_end?: number; notes?: Record<string, string> }
+    | {
+        id?: string;
+        plan_id?: string;
+        status?: string;
+        current_start?: number;
+        current_end?: number;
+        notes?: Record<string, string>;
+      }
     | undefined;
 
   const paymentEntity = pick(event.payload, ["payment", "entity"]) as
@@ -615,22 +622,29 @@ export async function handleWebhookEvent(event: {
       if (!userId || !plan || plan === "free") {
         return { handled: false, action: "missing_notes", userId };
       }
+      const billing = billingFromNotes(subscriptionEntity?.notes ?? paymentEntity?.notes);
+      if (!billing) return { handled: false, action: "missing_billing_interval", userId };
       await applySubscriptionForUser(admin, userId, {
         plan,
         status: eventName === "subscription.charged" ? "active" : "authenticated",
         providerSubscriptionId: subscriptionEntity?.id ?? null,
+        providerPlanId: subscriptionEntity?.plan_id ?? null,
         providerPaymentId: paymentEntity?.id ?? null,
+        billingInterval: billing,
+        periodStart: subscriptionEntity?.current_start
+          ? new Date(subscriptionEntity.current_start * 1000).toISOString()
+          : null,
         periodEnd: subscriptionEntity?.current_end
           ? new Date(subscriptionEntity.current_end * 1000).toISOString()
           : null,
-        amountInr: plan ? PLANS[plan].priceInr : 0,
+        amountInr: billingPrice(plan, billing),
       });
       if (paymentEntity?.id && paymentEntity.status === "captured") {
         await recordPaymentForUser(admin, userId, {
           plan,
           amountInr: Math.round((paymentEntity.amount ?? 0) / 100),
           paymentId: paymentEntity.id,
-          subscriptionId: subscriptionEntity?.id ?? null,
+          providerSubscriptionId: subscriptionEntity?.id ?? null,
           orderId: paymentEntity.order_id ?? null,
         });
       }
@@ -638,12 +652,18 @@ export async function handleWebhookEvent(event: {
     }
 
     case "subscription.pending":
-    case "subscription.halted": {
+    case "subscription.halted":
+    case "subscription.paused": {
       const userId = subscriptionEntity?.notes?.user_id ?? null;
       if (!userId) return { handled: false, action: "missing_notes" };
+      const status = eventName === "subscription.halted"
+        ? "halted"
+        : eventName === "subscription.paused"
+          ? "paused"
+          : "pending";
       await admin
         .from("subscriptions")
-        .update({ status: eventName === "subscription.halted" ? "halted" : "pending" })
+        .update({ status })
         .eq("user_id", userId);
       return { handled: true, action: eventName, userId };
     }
@@ -653,16 +673,38 @@ export async function handleWebhookEvent(event: {
     case "subscription.expired": {
       const userId = subscriptionEntity?.notes?.user_id ?? null;
       if (!userId) return { handled: false, action: "missing_notes" };
-      await admin
-        .from("subscriptions")
-        .update({
-          plan: "free",
-          status: eventName === "subscription.completed" ? "completed" : "cancelled",
-          cancelled_at: new Date().toISOString(),
-          current_period_end: new Date().toISOString(),
-          cancel_at_period_end: false,
-        })
-        .eq("user_id", userId);
+
+      const providerEnd = subscriptionEntity?.current_end
+        ? new Date(subscriptionEntity.current_end * 1000)
+        : null;
+      const stillActiveAtCycleEnd =
+        eventName === "subscription.cancelled" &&
+        providerEnd &&
+        providerEnd.getTime() > Date.now();
+
+      if (stillActiveAtCycleEnd) {
+        await admin
+          .from("subscriptions")
+          .update({
+            status: "cancelled",
+            cancel_at_period_end: true,
+            cancelled_at: new Date().toISOString(),
+            current_period_end: providerEnd.toISOString(),
+          })
+          .eq("user_id", userId);
+      } else {
+        await admin
+          .from("subscriptions")
+          .update({
+            plan: "free",
+            status: eventName === "subscription.completed" ? "completed" : "expired",
+            cancelled_at: new Date().toISOString(),
+            current_period_end: providerEnd?.toISOString() ?? new Date().toISOString(),
+            cancel_at_period_end: false,
+            amount_inr: null,
+          })
+          .eq("user_id", userId);
+      }
       return { handled: true, action: eventName, userId };
     }
 
@@ -682,6 +724,18 @@ export async function handleWebhookEvent(event: {
       return { handled: true, action: eventName, userId };
     }
 
+    case "payment.refunded": {
+      const userId = paymentEntity?.notes?.user_id ?? null;
+      if (paymentEntity?.id) {
+        const { error } = await admin
+          .from("payments")
+          .update({ status: "refunded" })
+          .eq("payment_id", paymentEntity.id);
+        if (error) console.error("[payments] refund webhook:", error.message);
+      }
+      return { handled: true, action: eventName, userId };
+    }
+
     case "payment.failed": {
       const userId = paymentEntity?.notes?.user_id ?? null;
       if (userId && paymentEntity?.id) {
@@ -694,7 +748,7 @@ export async function handleWebhookEvent(event: {
             provider: "razorpay",
             order_id: paymentEntity.order_id ?? null,
             payment_id: paymentEntity.id,
-            subscription_id: paymentEntity.subscription_id ?? null,
+            subscription_id: null,
             signature_verified: true,
             notes: {},
           },
@@ -720,7 +774,10 @@ async function applySubscriptionForUser(
     plan: PlanId;
     status: Subscription["status"];
     providerSubscriptionId: string | null;
+    providerPlanId: string | null;
     providerPaymentId: string | null;
+    billingInterval: BillingInterval;
+    periodStart: string | null;
     periodEnd: string | null;
     amountInr: number;
   },
@@ -732,10 +789,12 @@ async function applySubscriptionForUser(
       status: input.status,
       provider: "razorpay",
       provider_subscription_id: input.providerSubscriptionId,
+      provider_plan_id: input.providerPlanId,
       provider_payment_id: input.providerPaymentId,
+      billing_interval: input.billingInterval,
       amount_inr: input.amountInr,
       currency: "INR",
-      current_period_start: new Date().toISOString(),
+      current_period_start: input.periodStart,
       current_period_end: input.periodEnd,
       cancel_at_period_end: false,
       cancelled_at: null,
@@ -752,11 +811,21 @@ async function recordPaymentForUser(
     plan: PlanId;
     amountInr: number;
     paymentId: string | null;
-    subscriptionId: string | null;
+    providerSubscriptionId: string | null;
     orderId: string | null;
   },
 ) {
-  await admin.from("payments").upsert(
+  let localSubscriptionId: string | null = null;
+  if (input.providerSubscriptionId) {
+    const { data } = await admin
+      .from("subscriptions")
+      .select("id")
+      .eq("provider_subscription_id", input.providerSubscriptionId)
+      .maybeSingle();
+    localSubscriptionId = data?.id ?? null;
+  }
+
+  const { error } = await admin.from("payments").upsert(
     {
       user_id: userId,
       amount_inr: input.amountInr,
@@ -765,12 +834,13 @@ async function recordPaymentForUser(
       provider: "razorpay",
       order_id: input.orderId,
       payment_id: input.paymentId,
-      subscription_id: input.subscriptionId,
+      subscription_id: localSubscriptionId,
       signature_verified: true,
       notes: { plan: input.plan },
     },
     { onConflict: "payment_id", ignoreDuplicates: true },
   );
+  if (error) console.error("[payments] recordPaymentForUser:", error.message);
 }
 
 function planFromNotes(notes?: Record<string, string>) {
@@ -781,6 +851,11 @@ function planFromNotes(notes?: Record<string, string>) {
 function planFromSubscription(context: SessionContext) {
   const plan = context.subscription?.plan;
   return plan === "pro" || plan === "ultra" ? (plan as PlanId) : null;
+}
+
+function billingFromNotes(notes?: Record<string, string>) {
+  const billing = notes?.billing;
+  return billing === "monthly" || billing === "yearly" ? billing : null;
 }
 
 function pick(source: Record<string, unknown> | undefined, path: string[]) {
