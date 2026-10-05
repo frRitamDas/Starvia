@@ -20,6 +20,7 @@ import {
   createOrder,
   createSubscription as createRazorpaySubscription,
   fetchPayment,
+  fetchPlan,
   fetchSubscription,
   RazorpayError,
   verifyPaymentSignature,
@@ -150,8 +151,37 @@ export async function startCheckout(
   }
 
   try {
+    // Validate the provider-side plan before creating a customer mandate.
+    // This prevents an env-var mix-up (for example, a monthly plan id in the
+    // yearly slot) from silently charging the wrong cadence or amount.
+    const providerPlan = await fetchPlan(razorpayPlanId);
+    const expectedPeriod = input.billing === "yearly" ? "yearly" : "monthly";
+    const expectedPaise = amountInr * 100;
+    if (
+      providerPlan.period !== expectedPeriod ||
+      providerPlan.interval !== 1 ||
+      providerPlan.item?.active === false ||
+      providerPlan.item?.amount !== expectedPaise ||
+      (providerPlan.item?.currency && providerPlan.item.currency !== "INR")
+    ) {
+      console.error("[payments] Razorpay plan mismatch", {
+        planId: razorpayPlanId,
+        expectedPeriod,
+        expectedPaise,
+        actualPeriod: providerPlan.period,
+        actualInterval: providerPlan.interval,
+        actualAmount: providerPlan.item?.amount,
+        actualCurrency: providerPlan.item?.currency,
+      });
+      throw new ApiError(
+        "NOT_CONFIGURED",
+        `The configured Razorpay ${plan.name} ${input.billing} plan does not match Starvia's price or billing cycle. No payment was started.`,
+      );
+    }
+
     const subscription = await createRazorpaySubscription({
       planId: razorpayPlanId,
+      totalCount: input.billing === "yearly" ? 100 : 1200,
       notes: { user_id: context.user.id, plan: input.plan, billing: input.billing },
     });
     await upsertSubscription(context, {
