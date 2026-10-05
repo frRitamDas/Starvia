@@ -92,7 +92,8 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
-    scroll-padding-top: 5rem;
+    scroll-padding-top: calc(5rem + env(safe-area-inset-top));
+    overflow-x: clip;
   }
 
   body {
@@ -101,6 +102,29 @@
     text-rendering: optimizeLegibility;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     min-height: 100dvh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  main,
+  section,
+  header,
+  footer,
+  nav {
+    min-width: 0;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1,
@@ -223,6 +247,10 @@
 
   .glass {
     @apply border border-border/60 bg-background/80 backdrop-blur-xl backdrop-saturate-150;
+  }
+
+  .surface-card {
+    @apply rounded-2xl border border-border/70 bg-card;
   }
 
   .text-gradient {
