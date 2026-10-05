@@ -316,6 +316,15 @@ async function* streamGeminiText(
   }
 
   const reader = response.body.getReader();
+  let streamAborted = false;
+  const abortUpstream = () => {
+    streamAborted = true;
+    void reader.cancel().catch(() => undefined);
+  };
+  if (options.signal) {
+    if (options.signal.aborted) abortUpstream();
+    else options.signal.addEventListener("abort", abortUpstream, { once: true });
+  }
   const decoder = new TextDecoder();
   let buffer = "";
   let promptTokens = 0;
@@ -323,9 +332,13 @@ async function* streamGeminiText(
   let totalTokens = 0;
   let sawText = false;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (streamAborted || options.signal?.aborted) {
+        throw new AiError("unavailable", "The response was cancelled before it finished.");
+      }
+      if (done) break;
     buffer += decoder.decode(value, { stream: true });
 
     // SSE events are separated by a blank line.
@@ -364,17 +377,20 @@ async function* streamGeminiText(
     }
   }
 
-  if (!sawText) {
-    throw new AiError("bad_response", "AI didn't return an answer. Please try again.");
-  }
+    if (!sawText) {
+      throw new AiError("bad_response", "AI didn't return an answer. Please try again.");
+    }
 
-  return {
-    model,
-    totalTokens,
-    promptTokens,
-    completionTokens,
-    latencyMs: Date.now() - started,
-  };
+    return {
+      model,
+      totalTokens,
+      promptTokens,
+      completionTokens,
+      latencyMs: Date.now() - started,
+    };
+  } finally {
+    options.signal?.removeEventListener("abort", abortUpstream);
+  }
 }
 
 export async function* streamText(
