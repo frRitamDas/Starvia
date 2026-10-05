@@ -79,7 +79,7 @@ export function SiteHeader({ signedIn = false }: SiteHeaderProps) {
                   className="md:hidden"
                   aria-label="Open navigation"
                 >
-                  <Menu className="size-4.5" />
+                  <Menu className="size-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="flex w-[min(88vw,360px)] flex-col border-l border-border bg-background">
