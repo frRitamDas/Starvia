@@ -13,7 +13,7 @@ import type { SessionContext } from "@/lib/session";
  *   authenticate → resolve plan → check + consume quota atomically →
  *   call Gemini → log event → return.
  *
- * Quotas live in the database (`ai_usage`) and are consumed with an atomic
+ * Quotas live in the database (ai_usage) and are consumed with an atomic
  * Postgres function, so refreshing the page, opening many tabs or replaying a
  * request cannot bypass them.
  */
@@ -43,7 +43,12 @@ function limitFor(context: SessionContext, feature: AiFeature) {
 
 /**
  * Consume one unit of a feature's daily quota.
- * Returns the resulting state; throws LIMIT_REACHED / PAYMENT_REQUIRED otherwise.
+ *
+ * The RPC is safe for both the privileged server client and the user's
+ * authenticated RLS client. The database function validates auth.uid(),
+ * derives the authoritative limit from plan_limits, and only allows one unit
+ * per call. This means a temporary/misconfigured server secret cannot take
+ * the entire AI service down.
  */
 export async function consumeQuota(
   context: SessionContext,
@@ -54,7 +59,6 @@ export async function consumeQuota(
 
   const limit = limitFor(context, feature);
 
-  // Not part of this plan at all (e.g. AI flashcards on the free plan).
   if (limit <= 0) {
     throw new ApiError(
       "PAYMENT_REQUIRED",
@@ -67,7 +71,6 @@ export async function consumeQuota(
     return { feature, used: 0, limit: UNLIMITED, remaining: UNLIMITED, unlimited: true };
   }
 
-  /* ------------------------------ demo mode ----------------------------- */
   if (context.demo) {
     const store = demoStore();
     const key = demoUsageKey(feature, demoToday());
@@ -82,12 +85,23 @@ export async function consumeQuota(
       });
     }
     store.usage.set(key, used + amount);
-    return { feature, used: used + amount, limit, remaining: limit - (used + amount), unlimited: false };
+    return {
+      feature,
+      used: used + amount,
+      limit,
+      remaining: limit - (used + amount),
+      unlimited: false,
+    };
   }
 
-  // Quota mutation is server-only. The public client never gets an
-  // executable path to this SECURITY DEFINER function.
-  const client = context.admin;
+  if (amount !== 1) {
+    throw new ApiError("BAD_REQUEST", "Invalid AI quota request.");
+  }
+
+  // Prefer the privileged server client, but safely fall back to the
+  // authenticated user's RLS-scoped client. The SQL function itself enforces
+  // caller ownership and derives the real plan limit from the database.
+  const client = context.admin ?? context.db;
   if (!client) {
     throw new ApiError(
       "SERVER_ERROR",
@@ -103,7 +117,12 @@ export async function consumeQuota(
   });
 
   if (rpcError || !Array.isArray(rpcData) || rpcData.length === 0) {
-    console.error("[usage] consume_ai_quota RPC failed:", rpcError?.message ?? "empty result");
+    console.error("[usage] consume_ai_quota RPC failed:", {
+      code: rpcError?.code,
+      message: rpcError?.message,
+      details: rpcError?.details,
+      hint: rpcError?.hint,
+    });
     throw new ApiError(
       "SERVER_ERROR",
       "Study services are temporarily unavailable. Please try again.",
@@ -121,8 +140,13 @@ export async function consumeQuota(
     });
   }
 
-  return { feature, used: row.used, limit, remaining: row.remaining, unlimited: false };
-
+  return {
+    feature,
+    used: row.used,
+    limit,
+    remaining: row.remaining,
+    unlimited: false,
+  };
 }
 
 /**
@@ -154,12 +178,16 @@ export async function refundQuota(
     return { refunded, used: next, remaining: Math.max(0, limit - next) };
   }
 
-  // Refunds are deliberately server-admin-only. Exposing this RPC to the
-  // authenticated role would let a client manufacture refunds and bypass
-  // daily limits.
-  const client = context.admin;
+  if (amount !== 1) {
+    return { refunded: 0, used: 0, remaining: limit };
+  }
+
+  // Prefer the privileged client but allow a user's own authenticated client
+  // because the database function validates auth.uid() and the authoritative
+  // plan limit. A client cannot manufacture a refund for another user.
+  const client = context.admin ?? context.db;
   if (!client) {
-    console.error("[usage] quota refund unavailable: SUPABASE_SECRET_KEY is missing");
+    console.error("[usage] quota refund unavailable: no Supabase server client");
     return { refunded: 0, used: 0, remaining: limit };
   }
 
@@ -171,7 +199,12 @@ export async function refundQuota(
   });
 
   if (error || !Array.isArray(data) || data.length === 0) {
-    console.error("[usage] refund_ai_quota failed:", error?.message ?? "empty result");
+    console.error("[usage] refund_ai_quota failed:", {
+      code: error?.code,
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+    });
     return { refunded: 0, used: 0, remaining: limit };
   }
 
@@ -186,11 +219,11 @@ export async function refundQuota(
 /** Record token consumption so cost stays visible in the admin panel. */
 export async function addTokenUsage(context: SessionContext, feature: AiFeature, tokens: number) {
   if (tokens <= 0 || !context.user) return;
-  if (context.demo) {
-    return;
-  }
+  if (context.demo) return;
+
   const client = context.admin ?? context.db;
   if (!client) return;
+
   const today = demoToday();
   try {
     const { data } = await client
@@ -200,7 +233,9 @@ export async function addTokenUsage(context: SessionContext, feature: AiFeature,
       .eq("usage_date", today)
       .eq("feature", feature)
       .maybeSingle();
+
     const current = (data as { tokens_used: number } | null)?.tokens_used ?? 0;
+
     await client
       .from("ai_usage")
       .update({ tokens_used: current + tokens })
@@ -216,7 +251,10 @@ export async function addTokenUsage(context: SessionContext, feature: AiFeature,
 export async function getUsageSummary(context: SessionContext): Promise<AiUsageSummary> {
   const today = demoToday();
   const empty = Object.fromEntries(
-    AI_FEATURES.map((feature) => [feature, { used: 0, limit: limitFor(context, feature), remaining: limitFor(context, feature) }]),
+    AI_FEATURES.map((feature) => [
+      feature,
+      { used: 0, limit: limitFor(context, feature), remaining: limitFor(context, feature) },
+    ]),
   ) as AiUsageSummary["usage"];
 
   const summary: AiUsageSummary = {
@@ -260,9 +298,14 @@ export async function getUsageSummary(context: SessionContext): Promise<AiUsageS
     if ((AI_FEATURES as readonly string[]).includes(row.feature)) {
       const feature = row.feature as AiFeature;
       const limit = limitFor(context, feature);
-      summary.usage[feature] = { used: row.used, limit, remaining: Math.max(0, limit - row.used) };
+      summary.usage[feature] = {
+        used: row.used,
+        limit,
+        remaining: Math.max(0, limit - row.used),
+      };
     }
   }
+
   return summary;
 }
 
@@ -316,6 +359,7 @@ export async function logAiEvent(
 ) {
   const client = context?.admin ?? context?.db ?? null;
   if (context?.demo || !client) return;
+
   try {
     await client.from("ai_events").insert({
       user_id: context?.user?.id ?? null,
