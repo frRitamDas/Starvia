@@ -11,11 +11,13 @@ import {
 } from "lucide-react";
 
 import { AiDiagnosticsCard } from "@/components/admin/ai-diagnostics-card";
+import { BillingConfigurationCard } from "@/components/admin/billing-configuration-card";
 import { BarChart, ProgressRing } from "@/components/learn/stat-charts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { getAdminStats } from "@/lib/data/admin";
+import { razorpayRecurringPlanStatus } from "@/lib/env";
 import { requireOnboarded } from "@/lib/session";
 import { formatPrice, formatRelativeTime } from "@/lib/utils";
 
@@ -36,6 +38,7 @@ export default async function AdminPage() {
   if (!context.isAdmin) redirect("/dashboard");
 
   const stats = await getAdminStats(context);
+  const recurringPlans = razorpayRecurringPlanStatus();
   const { totals, revenue, ai, activity, recentFeedback } = stats;
 
   const paidUsers = totals.pro + totals.ultra;
@@ -143,6 +146,8 @@ export default async function AdminPage() {
       </div>
 
       <AiDiagnosticsCard />
+
+      <BillingConfigurationCard recurringPlans={recurringPlans} />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
