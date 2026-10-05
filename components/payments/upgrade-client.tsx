@@ -100,11 +100,18 @@ export function PlanGrid({
   paymentsAvailable,
   mockAvailable,
   signedIn,
+  recurringPlans,
 }: {
   currentPlan: PlanId;
   paymentsAvailable: boolean;
   mockAvailable: boolean;
   signedIn: boolean;
+  recurringPlans: {
+    proMonthly: boolean;
+    proYearly: boolean;
+    ultraMonthly: boolean;
+    ultraYearly: boolean;
+  };
 }) {
   const router = useRouter();
   const [billing, setBilling] = React.useState<BillingInterval>("monthly");
@@ -243,6 +250,15 @@ export function PlanGrid({
         {PLAN_ORDER.map((planId) => {
           const plan = PLANS[planId];
           const active = planId === currentPlan;
+          const recurringConfigured =
+            planId === "free" ||
+            (planId === "pro"
+              ? billing === "yearly"
+                ? recurringPlans.proYearly
+                : recurringPlans.proMonthly
+              : billing === "yearly"
+                ? recurringPlans.ultraYearly
+                : recurringPlans.ultraMonthly);
           const price = billingPrice(plan.id, billing);
           const limits = limitSummary(planId);
 
@@ -302,7 +318,7 @@ export function PlanGrid({
                 ) : (
                   <Button
                     variant={plan.marketing.badge ? "gradient" : "default"}
-                    disabled={active || busy !== null}
+                    disabled={active || busy !== null || !recurringConfigured}
                     onClick={() => upgrade(planId)}
                   >
                     {busy === planId ? (
@@ -310,7 +326,11 @@ export function PlanGrid({
                     ) : (
                       <Sparkles className="size-4" />
                     )}
-                    {active ? "Current plan" : `Upgrade to ${plan.name}`}
+                    {active
+                      ? "Current plan"
+                      : !recurringConfigured
+                        ? (billing === "yearly" ? "Yearly billing not configured" : "Monthly billing not configured")
+                        : `Upgrade to ${plan.name}`}
                   </Button>
                 )}
               </CardContent>
@@ -319,6 +339,16 @@ export function PlanGrid({
         })}
       </div>
 
+      {paymentsAvailable && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-warning/30 bg-warning/[0.06] p-4 text-[12.5px]">
+          <AlertTriangle className="size-4 shrink-0 text-warning" />
+          <p className="min-w-0 flex-1">
+            {billing === "yearly"
+              ? "Yearly recurring plans must be configured in Razorpay before annual checkout is enabled."
+              : "Monthly recurring plans must be configured in Razorpay before monthly checkout is enabled."}
+          </p>
+        </div>
+      )}
       {!paymentsAvailable ? (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-warning/30 bg-warning/[0.06] p-4 text-[12.5px]">
           <AlertTriangle className="size-4 shrink-0 text-warning" />
