@@ -32,6 +32,34 @@ export const publicEnv = {
 };
 
 export const serverEnv = {
+  get aiProvider() {
+    const provider = read("AI_PROVIDER", "nararouter").toLowerCase();
+    return provider === "gemini" ? "gemini" : "nararouter";
+  },
+  get naraRouterApiKey() {
+    assertServer("naraRouterApiKey");
+    return read("NARAROUTER_API_KEY");
+  },
+  get naraRouterBaseUrl() {
+    assertServer("naraRouterBaseUrl");
+    return read("NARAROUTER_BASE_URL", "https://router.bynara.id/v1");
+  },
+  get naraRouterModelDefault() {
+    assertServer("naraRouterModelDefault");
+    return read("NARAROUTER_MODEL_DEFAULT", "agnes-2.5-flash");
+  },
+  get naraRouterModelFast() {
+    assertServer("naraRouterModelFast");
+    return read("NARAROUTER_MODEL_FAST", "agnes-2.5-flash");
+  },
+  get naraRouterModelVision() {
+    assertServer("naraRouterModelVision");
+    return read("NARAROUTER_MODEL_VISION", "agnes-2.5-flash");
+  },
+  get naraRouterModelPro() {
+    assertServer("naraRouterModelPro");
+    return read("NARAROUTER_MODEL_PRO", "agnes-3-flash");
+  },
   get geminiApiKey() {
     assertServer("geminiApiKey");
     return read("GEMINI_API_KEY") || read("GOOGLE_GENERATIVE_AI_API_KEY");
@@ -98,6 +126,7 @@ export const supabaseConfigured = () =>
   Boolean(publicEnv.supabaseUrl && publicEnv.supabaseAnonKey);
 
 export const geminiConfigured = () => Boolean(serverEnv.geminiApiKey);
+export const naraRouterConfigured = () => Boolean(serverEnv.naraRouterApiKey);
 
 export const razorpayConfigured = () =>
   Boolean(serverEnv.razorpayKeyId && serverEnv.razorpayKeySecret);
@@ -116,6 +145,8 @@ export const demoMode = () => {
 export function integrationStatus() {
   return {
     supabase: supabaseConfigured(),
+    aiProvider: serverEnv.aiProvider,
+    naraRouter: naraRouterConfigured(),
     gemini: geminiConfigured(),
     razorpay: razorpayConfigured(),
     razorpayWebhook: Boolean(serverEnv.razorpayWebhookSecret),
