@@ -189,6 +189,13 @@ export async function POST(request: Request) {
             }
           }
 
+          if (clientGone) {
+            throw new AiError(
+              "unavailable",
+              "The response was interrupted before it finished. Please try again.",
+            );
+          }
+
           const latencyMs = Date.now() - startedAt;
 
           const assistantMessage = await appendMessage(ctx, {
