@@ -32,7 +32,9 @@ export interface Subscription {
   status: SubscriptionStatus;
   provider: SubscriptionProvider;
   provider_subscription_id: string | null;
+  provider_plan_id: string | null;
   provider_payment_id: string | null;
+  billing_interval: "monthly" | "yearly" | null;
   provider_customer_id: string | null;
   current_period_start: string | null;
   current_period_end: string | null;
