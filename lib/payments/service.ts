@@ -87,6 +87,20 @@ export async function startCheckout(
 
   const currentPlan = context.plan;
   const currentSubscription = await getSubscription(context);
+
+  // Never create multiple live Razorpay mandates from repeated clicks or tabs.
+  // A pending provider subscription must be completed or cancelled before a
+  // second checkout session is created for the same account.
+  if (
+    currentSubscription?.provider === "razorpay" &&
+    currentSubscription.status === "created" &&
+    currentSubscription.provider_subscription_id
+  ) {
+    throw new ApiError(
+      "CONFLICT",
+      "A payment session is already waiting for confirmation. Finish or close that checkout before starting another one.",
+    );
+  }
   if (currentPlan === input.plan) {
     if (currentSubscription?.billing_interval === input.billing) {
       throw new ApiError("CONFLICT", `You're already on the ${plan.name} ${input.billing} plan.`);
