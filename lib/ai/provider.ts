@@ -18,10 +18,10 @@ import type {
 } from "@/lib/ai/types";
 
 /**
- * Gemini provider abstraction.
+ * Central AI provider abstraction.
  *
- * The whole app talks to Gemini through this file only. Swapping to a paid tier,
- * a different model, or (later) another provider is a change in ONE place.
+ * The app talks to this file only. Gemini remains the native fallback/vision
+ * provider; NaraRouter is an opt-in text provider selected through env.
  * The REST API is used directly — no vendor SDK — to keep the bundle small and
  * the surface area auditable.
  *
