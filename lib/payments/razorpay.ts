@@ -101,6 +101,7 @@ export interface RazorpayPlan {
 export interface RazorpayPayment {
   id: string;
   order_id: string | null;
+  subscription_id: string | null;
   amount: number;
   currency: string;
   status: string;
