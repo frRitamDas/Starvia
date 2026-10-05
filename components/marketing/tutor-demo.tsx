@@ -141,11 +141,12 @@ export function TutorDemo() {
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-success/70" />
             <span className="relative inline-flex size-2.5 rounded-full bg-success" />
           </span>
-          <p className="text-sm font-medium">Starvia AI Tutor</p>
+          <p className="text-sm font-medium">Starvia AI Workspace</p>
         </div>
-        <Badge variant="outline" className="hidden sm:inline-flex">
-          Adapts to your class
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="hidden sm:inline-flex">Multi-model ready</Badge>
+          <Badge variant="outline" className="hidden md:inline-flex">Adapts to your class</Badge>
+        </div>
       </div>
 
       <div className="border-b border-border/70 px-4 py-3">
