@@ -259,7 +259,7 @@ export type SubscriptionStatus =
   | "expired";
 export type SubscriptionProvider = "free" | "razorpay" | "mock";
 
-/** A subscription currently grants its plan when it is active/pending-paid and unexpired. */
+/** A paid subscription grants access only after activation and while its paid period is unexpired. */
 export function subscriptionGrantsAccess(sub: {
   status: SubscriptionStatus | string;
   current_period_end: string | null;
