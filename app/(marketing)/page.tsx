@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -35,6 +36,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { FAQS, faqJsonLd } from "@/lib/faq";
 import { siteConfig } from "@/lib/site";
+import { getSessionContext } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: `${siteConfig.name} — AI learning workspace for Indian students`,
@@ -70,7 +72,12 @@ const TRUST_POINTS = [
   "Free plan with no card required",
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const session = await getSessionContext().catch(() => null);
+  if (session?.user) {
+    redirect(session.onboarded ? "/dashboard" : "/onboarding");
+  }
+
   return (
     <>
       <script
