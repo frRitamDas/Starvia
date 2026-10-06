@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, LogOut, Moon, Sun } from "lucide-react";
+import { Bell, Camera, Loader2, LogOut, Moon, Sun, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/components/theme/theme-provider";
 import { initialsOf } from "@/lib/utils";
+import {
+  notificationSoundEnabled,
+  playNotificationSound,
+  setNotificationSoundEnabled,
+} from "@/lib/notifications/sound";
 
 export function AvatarUploader({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
   const router = useRouter();
@@ -137,6 +142,58 @@ export function ThemeSetting() {
   );
 }
 
+export function NotificationSoundSetting() {
+  const [enabled, setEnabled] = React.useState(true);
+
+  React.useEffect(() => {
+    setEnabled(notificationSoundEnabled());
+  }, []);
+
+  function update(next: boolean) {
+    setEnabled(next);
+    setNotificationSoundEnabled(next);
+    if (next) void playNotificationSound({ force: true });
+    toast.success(next ? "Notification sounds are on" : "Notification sounds are off");
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-muted/40">
+          <Bell className="size-4 text-muted-foreground" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[13.5px] font-medium">Notification sound</p>
+          <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
+            A soft stereo chime plays for Starvia notifications. It stays on this device and never requires a download.
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void playNotificationSound({ force: true })}
+          aria-label="Preview notification sound"
+          title="Preview sound"
+        >
+          <Volume2 className="size-4" />
+          Test
+        </Button>
+        <Button
+          variant={enabled ? "default" : "outline"}
+          size="sm"
+          onClick={() => update(!enabled)}
+          aria-pressed={enabled}
+        >
+          {enabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+          {enabled ? "On" : "Off"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function SignOutButton({ className }: { className?: string }) {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
@@ -190,6 +247,10 @@ export function SettingsCard({
         <Separator />
 
         <ThemeSetting />
+
+        <Separator />
+
+        <NotificationSoundSetting />
 
         <Separator />
 
