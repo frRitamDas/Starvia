@@ -32,8 +32,22 @@ export default async function ProfilePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/.11),transparent_42%)]" aria-hidden />
         <div className="relative p-5 sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
+            <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
               <AvatarUploader name={profile.full_name ?? "Student"} avatarUrl={profile.avatar_url} />
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-2xl font-semibold tracking-tight">
+                  {profile.full_name ?? "Student"}
+                </h1>
+                <p className="mt-1 truncate text-sm text-muted-foreground">
+                  {profile.email ?? "Student account"}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Badge variant="secondary">Class {profile.class_level ?? "—"}</Badge>
+                  <Badge variant="outline">
+                    {BOARDS.find((board) => board.id === profile.board)?.name ?? "Board not set"}
+                  </Badge>
+                </div>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild size="sm" variant="outline">
