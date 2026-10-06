@@ -89,13 +89,20 @@ function loadRazorpay(): Promise<boolean> {
     const timeout = window.setTimeout(() => finish(Boolean(window.Razorpay)), 10000);
 
     if (existing) {
-      existing.addEventListener("load", () => finish(Boolean(window.Razorpay)), { once: true });
-      existing.addEventListener("error", () => finish(false), { once: true });
-
-      // A script can already be complete before this component attaches listeners.
-      if (existing.readyState === "complete") {
+      if (existing.dataset.starviaLoaded === "true") {
         queueMicrotask(() => finish(Boolean(window.Razorpay)));
+        return;
       }
+
+      existing.addEventListener(
+        "load",
+        () => {
+          existing.dataset.starviaLoaded = "true";
+          finish(Boolean(window.Razorpay));
+        },
+        { once: true },
+      );
+      existing.addEventListener("error", () => finish(false), { once: true });
       return;
     }
 
@@ -103,7 +110,10 @@ function loadRazorpay(): Promise<boolean> {
     script.id = SCRIPT_ID;
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
-    script.onload = () => finish(Boolean(window.Razorpay));
+    script.onload = () => {
+      script.dataset.starviaLoaded = "true";
+      finish(Boolean(window.Razorpay));
+    };
     script.onerror = () => finish(false);
     document.body.appendChild(script);
   });
