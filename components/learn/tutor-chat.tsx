@@ -116,6 +116,7 @@ export function TutorChat({
     if (!focusMode) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => textareaRef.current?.focus());
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setFocusMode(false);
     };
@@ -136,6 +137,8 @@ export function TutorChat({
 
   async function loadConversation(id: string) {
     if (id === activeId || streaming) return;
+    atBottomRef.current = true;
+    setShowLatest(false);
     try {
       const data = await apiFetch<{ conversation: Conversation; messages: ChatMessage[] }>(
         `/api/tutor/conversations/${id}`,
@@ -161,6 +164,8 @@ export function TutorChat({
       setActiveId(data.conversation.id);
       setMessages([]);
       setStreamedText("");
+      atBottomRef.current = true;
+      setShowLatest(false);
       textareaRef.current?.focus();
       router.replace(`/tutor?c=${data.conversation.id}`);
     } catch (error) {
@@ -212,7 +217,11 @@ export function TutorChat({
           created_at: new Date().toISOString(),
         };
 
-    if (tempUserMessage) setMessages((current) => [...current, tempUserMessage]);
+    if (tempUserMessage) {
+      atBottomRef.current = true;
+      setShowLatest(false);
+      setMessages((current) => [...current, tempUserMessage]);
+    }
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -354,7 +363,12 @@ export function TutorChat({
     >
       {/* Conversation list (desktop) */}
       <div className="hidden lg:block">
-        <Card className="interactive-card flex h-[calc(100dvh-13rem)] flex-col p-3">
+        <Card
+          className={cn(
+            "interactive-card flex flex-col p-3",
+            focusMode ? "h-dvh rounded-none border-y-0 border-l-0" : "h-[calc(100dvh-13rem)]",
+          )}
+        >
           <Button variant="gradient" size="sm" className="w-full" onClick={startNewChat}>
             <MessageSquarePlus className="size-4" />
             New chat
