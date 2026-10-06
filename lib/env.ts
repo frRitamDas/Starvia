@@ -33,8 +33,13 @@ export const publicEnv = {
 
 export const serverEnv = {
   get aiProvider() {
-    const provider = read("AI_PROVIDER", "nararouter").toLowerCase();
-    return provider === "nararouter" || provider === "openrouter" ? provider : "gemini";
+    const configured = read("AI_PROVIDER").toLowerCase();
+    if (configured === "nararouter" || configured === "openrouter") return configured;
+    // Prefer an explicitly configured hosted gateway over an older/default route.
+    // This keeps production working even when AI_PROVIDER is omitted.
+    if (read("OPENROUTER_API_KEY")) return "openrouter";
+    if (read("NARAROUTER_API_KEY")) return "nararouter";
+    return "gemini";
   },
   get naraRouterApiKey() {
     assertServer("naraRouterApiKey");
