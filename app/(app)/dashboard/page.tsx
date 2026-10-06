@@ -160,9 +160,9 @@ export default async function DashboardPage() {
                   <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">Current tier</p>
                   <p className="mt-1 text-lg font-semibold">Level {snapshot.level.level}</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {{snapshot.level.xpForNextLevel > snapshot.level.xpIntoLevel
+                    {snapshot.level.xpForNextLevel > snapshot.level.xpIntoLevel
                       ? `${snapshot.level.xpForNextLevel - snapshot.level.xpIntoLevel} XP to your next level.`
-                      : "Next level unlocked."}}
+                      : "Next level unlocked."}
                   </p>
                 </div>
                 <Trophy className="size-5 text-primary" />
