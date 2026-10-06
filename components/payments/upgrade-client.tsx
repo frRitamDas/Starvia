@@ -66,13 +66,43 @@ const SCRIPT_ID = "razorpay-checkout-js";
 
 function loadRazorpay(): Promise<boolean> {
   return new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if (window.Razorpay) return resolve(true);
+    if (typeof window === "undefined") {
+      resolve(false);
+      return;
+    }
+
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
 
     const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
+    let settled = false;
+
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      resolve(ok);
+    };
+
+    const timeout = window.setTimeout(() => finish(Boolean(window.Razorpay)), 10000);
+
     if (existing) {
-      existing.addEventListener("load", () => resolve(true));
-      existing.addEventListener("error", () => resolve(false));
+      if (existing.dataset.starviaLoaded === "true") {
+        queueMicrotask(() => finish(Boolean(window.Razorpay)));
+        return;
+      }
+
+      existing.addEventListener(
+        "load",
+        () => {
+          existing.dataset.starviaLoaded = "true";
+          finish(Boolean(window.Razorpay));
+        },
+        { once: true },
+      );
+      existing.addEventListener("error", () => finish(false), { once: true });
       return;
     }
 
@@ -80,8 +110,11 @@ function loadRazorpay(): Promise<boolean> {
     script.id = SCRIPT_ID;
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    script.onload = () => {
+      script.dataset.starviaLoaded = "true";
+      finish(Boolean(window.Razorpay));
+    };
+    script.onerror = () => finish(false);
     document.body.appendChild(script);
   });
 }
