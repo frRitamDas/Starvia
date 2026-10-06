@@ -5,6 +5,12 @@ import {
   naraRouterSupportsRequest,
   streamTextNaraRouter,
 } from "@/lib/ai/nararouter";
+import {
+  generateTextOpenRouter,
+  openRouterConfigured,
+  openRouterSupportsRequest,
+  streamTextOpenRouter,
+} from "@/lib/ai/openrouter";
 import { AiError } from "@/lib/ai/types";
 import type {
   AiContent,
@@ -57,7 +63,7 @@ export function resolveModel(alias: ModelAlias = "default"): string {
 
 export function aiConfigured() {
   try {
-    return Boolean(serverEnv.geminiApiKey || naraRouterConfigured());
+    return Boolean(serverEnv.geminiApiKey || naraRouterConfigured() || openRouterConfigured());
   } catch {
     return false;
   }
@@ -252,6 +258,10 @@ export async function generateText(options: GenerateOptions): Promise<GenerateRe
     return generateTextGemini(options);
   }
 
+  if (serverEnv.aiProvider === "openrouter" && openRouterSupportsRequest(options)) {
+    return generateTextOpenRouter(options);
+  }
+
   if (naraRouterSupportsRequest(options) && naraRouterConfigured()) {
     return generateTextNaraRouter(options);
   }
@@ -378,6 +388,22 @@ export async function* streamText(
     }
   }
 
+  if (serverEnv.aiProvider === "openrouter" && openRouterSupportsRequest(options)) {
+    let emitted = false;
+    try {
+      const generator = streamTextOpenRouter(options);
+      while (true) {
+        const next = await generator.next();
+        if (next.done) return next.value;
+        emitted = true;
+        yield next.value;
+      }
+    } catch (error) {
+      if (emitted || !serverEnv.geminiApiKey) throw error;
+      console.warn("[ai] OpenRouter stream failed before output; using Gemini fallback.", error);
+    }
+  }
+
   if (serverEnv.geminiApiKey) {
     let emitted = false;
     try {
@@ -398,6 +424,15 @@ export async function* streamText(
 
   if (naraRouterSupportsRequest(options) && naraRouterConfigured()) {
     const generator = streamTextNaraRouter(options);
+    while (true) {
+      const next = await generator.next();
+      if (next.done) return next.value;
+      yield next.value;
+    }
+  }
+
+  if (openRouterSupportsRequest(options) && openRouterConfigured()) {
+    const generator = streamTextOpenRouter(options);
     while (true) {
       const next = await generator.next();
       if (next.done) return next.value;
