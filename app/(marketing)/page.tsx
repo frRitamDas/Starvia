@@ -100,7 +100,7 @@ export default async function LandingPage() {
       />
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border/60">
+      <section className="relative overflow-hidden border-b border-border/60 landing-ambient-hero">
         <div className="absolute inset-0 premium-grain opacity-70" aria-hidden />
         <div className="absolute left-1/2 top-0 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-foreground/[0.035] blur-3xl" aria-hidden />
         <div className="container relative py-14 sm:py-20 lg:py-24">

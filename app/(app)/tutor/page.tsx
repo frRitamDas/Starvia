@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { TutorChat } from "@/components/learn/tutor-chat";
 import { getConversation, listConversations } from "@/lib/data/tutor";
 import { requireOnboarded } from "@/lib/session";
+import { openRouterConfigured } from "@/lib/env";
 import { getUsageSummary } from "@/lib/usage";
 import { subjectsForClass } from "@/lib/curriculum";
 
@@ -55,6 +56,7 @@ export default async function TutorPage({
         streak={context.profile.streak_count ?? 0}
         studyMinutes={context.profile.study_minutes ?? 0}
         xp={context.profile.xp ?? 0}
+        aiReady={openRouterConfigured()}
         demo={context.demo}
       />
     </div>

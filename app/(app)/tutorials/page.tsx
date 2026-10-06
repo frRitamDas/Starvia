@@ -43,7 +43,7 @@ export default async function TutorialsPage({
   }, {});
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="space-y-1">
         <h1 className="font-display text-xl font-semibold sm:text-2xl">AI Tutorials</h1>
         <p className="text-sm text-muted-foreground">
@@ -72,13 +72,13 @@ export default async function TutorialsPage({
             <Badge variant="secondary">{tutorials.length} saved</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 pb-4">
           {tutorials.length === 0 ? (
             <EmptyState
               icon={Sparkles}
               title="Your library is empty"
               description="Generate your first tutorial above — it will be saved here so you never lose it."
-              className="border-none bg-transparent py-6"
+              className="border-none bg-transparent py-7 sm:py-8"
             />
           ) : (
             Object.entries(grouped).map(([subject, items]) => (

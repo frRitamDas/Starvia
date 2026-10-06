@@ -80,10 +80,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div className="flex min-h-dvh bg-background">
+    <div className="ambient-study-shell flex min-h-dvh bg-background lg:h-dvh lg:overflow-hidden">
       <AppSidebar footer={sidebarFooter} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 min-h-0 flex-1 flex-col">
         <MobileTopBar
           name={name}
           email={context.user?.email ?? null}
@@ -118,9 +118,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <main
           id="main"
-          className="min-w-0 flex-1 overflow-x-hidden px-4 pb-[calc(var(--starvia-mobile-bottomnav)+1rem)] pt-[calc(var(--starvia-mobile-topbar)+0.5rem)] sm:px-6 lg:pb-10 lg:pt-6"
+          className="min-w-0 min-h-0 flex-1 overflow-x-hidden px-4 pb-[calc(var(--starvia-mobile-bottomnav)+1rem)] pt-[calc(var(--starvia-mobile-topbar)+0.5rem)] sm:px-6 lg:overflow-y-auto lg:pb-8 lg:pt-6"
         >
-          <div className="mx-auto w-full max-w-6xl space-y-6">
+          <div className="mx-auto w-full max-w-[1560px] space-y-5 2xl:px-4">
             {isDemo ? <DemoBanner /> : null}
             {children}
           </div>
