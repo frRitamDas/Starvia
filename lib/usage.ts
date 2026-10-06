@@ -3,6 +3,7 @@ import "server-only";
 import { ApiError } from "@/lib/http";
 import { demoStore, demoToday, demoUsageKey } from "@/lib/demo/store";
 import { AI_FEATURES, FEATURE_LABELS, type AiFeature } from "@/lib/plans";
+import { publicEnv } from "@/lib/env";
 import type { AiUsageSummary } from "@/lib/types";
 import type { SessionContext } from "@/lib/session";
 
@@ -39,6 +40,58 @@ export function msUntilReset() {
 
 function limitFor(context: SessionContext, feature: AiFeature) {
   return context.limits[feature] ?? 0;
+}
+
+async function callQuotaService(
+  context: SessionContext,
+  action: "consume" | "refund",
+  feature: AiFeature,
+  limit: number,
+  amount = 1,
+) {
+  const client = context.db;
+  if (!client || !context.user) {
+    throw new ApiError("SERVER_ERROR", "Study services are not configured correctly. Please try again later.");
+  }
+
+  const { data: sessionData } = await client.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) {
+    throw new ApiError("UNAUTHORIZED", "Your study session has expired. Please sign in again.");
+  }
+
+  const response = await fetch(`${publicEnv.supabaseUrl}/functions/v1/starvia-quota`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: publicEnv.supabaseAnonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action, feature, limit, amount }),
+    cache: "no-store",
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | { data?: Record<string, unknown>; error?: string; code?: string }
+    | null;
+
+  if (!response.ok || !payload?.data) {
+    console.error("[usage] quota service failed:", {
+      action,
+      feature,
+      status: response.status,
+      code: payload?.code,
+      message: payload?.error,
+    });
+    throw new ApiError(
+      "SERVER_ERROR",
+      payload?.error === "Authentication required."
+        ? "Your study session has expired. Please sign in again."
+        : "Study services are temporarily unavailable. Please try again.",
+    );
+  }
+
+  return payload.data;
 }
 
 /**
@@ -98,39 +151,8 @@ export async function consumeQuota(
     throw new ApiError("BAD_REQUEST", "Invalid AI quota request.");
   }
 
-  // Prefer the privileged server client, but safely fall back to the
-  // authenticated user's RLS-scoped client. The SQL function itself enforces
-  // caller ownership and derives the real plan limit from the database.
-  const client = context.admin ?? context.db;
-  if (!client) {
-    throw new ApiError(
-      "SERVER_ERROR",
-      "Study services are not configured correctly. Please try again later.",
-    );
-  }
-
-  const { data: rpcData, error: rpcError } = await client.rpc("consume_ai_quota", {
-    p_user_id: context.user.id,
-    p_feature: feature,
-    p_limit: limit,
-    p_amount: amount,
-  });
-
-  if (rpcError || !Array.isArray(rpcData) || rpcData.length === 0) {
-    console.error("[usage] consume_ai_quota RPC failed:", {
-      code: rpcError?.code,
-      message: rpcError?.message,
-      details: rpcError?.details,
-      hint: rpcError?.hint,
-    });
-    throw new ApiError(
-      "SERVER_ERROR",
-      "Study services are temporarily unavailable. Please try again.",
-    );
-  }
-
-  const row = rpcData[0] as { allowed: boolean; used: number; remaining: number };
-  if (!row.allowed) {
+  const result = await callQuotaService(context, "consume", feature, limit, amount);
+  const row = result as { allowed: boolean; used: number; remaining: number };  if (!row.allowed) {
     throw new ApiError("LIMIT_REACHED", limitMessage(feature), {
       feature,
       used: row.used,
@@ -182,34 +204,8 @@ export async function refundQuota(
     return { refunded: 0, used: 0, remaining: limit };
   }
 
-  // Prefer the privileged client but allow a user's own authenticated client
-  // because the database function validates auth.uid() and the authoritative
-  // plan limit. A client cannot manufacture a refund for another user.
-  const client = context.admin ?? context.db;
-  if (!client) {
-    console.error("[usage] quota refund unavailable: no Supabase server client");
-    return { refunded: 0, used: 0, remaining: limit };
-  }
-
-  const { data, error } = await client.rpc("refund_ai_quota", {
-    p_user_id: context.user.id,
-    p_feature: feature,
-    p_limit: limit,
-    p_amount: amount,
-  });
-
-  if (error || !Array.isArray(data) || data.length === 0) {
-    console.error("[usage] refund_ai_quota failed:", {
-      code: error?.code,
-      message: error?.message,
-      details: error?.details,
-      hint: error?.hint,
-    });
-    return { refunded: 0, used: 0, remaining: limit };
-  }
-
-  const row = data[0] as { refunded: number; used: number; remaining: number };
-  return {
+  const result = await callQuotaService(context, "refund", feature, limit, amount);
+  const row = result as { refunded: number; used: number; remaining: number };  return {
     refunded: Math.max(0, row.refunded ?? 0),
     used: Math.max(0, row.used ?? 0),
     remaining: Math.max(0, row.remaining ?? 0),
