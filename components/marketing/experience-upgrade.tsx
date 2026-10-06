@@ -125,7 +125,7 @@ export function ExperienceUpgrade() {
                       key={item.title}
                       href={item.href}
                       className="group interactive-card rounded-2xl border border-border/70 bg-background p-3.5"
-                      style={{ animationDelay: index * 80 }}
+                      style={{ animationDelay: `${index * 80}ms` }}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex size-9 items-center justify-center rounded-xl bg-muted text-foreground">
