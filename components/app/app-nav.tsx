@@ -12,6 +12,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   Layers,
+  Loader2,
   Menu,
   ScanLine,
   Settings2,
@@ -113,6 +114,13 @@ export function MobileTopBar({
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
   const [keyboardOpen, setKeyboardOpen] = React.useState(false);
+  const [usage, setUsage] = React.useState<{
+    tutor: { used: number; limit: number; remaining: number };
+    tutorial: { used: number; limit: number; remaining: number };
+    quiz: { used: number; limit: number; remaining: number };
+    image: { used: number; limit: number; remaining: number };
+  } | null>(null);
+  const [usageLoading, setUsageLoading] = React.useState(false);
 
   React.useEffect(() => {
     const viewport = window.visualViewport;
@@ -129,6 +137,30 @@ export function MobileTopBar({
   React.useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  React.useEffect(() => {
+    if (!open || usage || usageLoading) return;
+
+    let cancelled = false;
+    setUsageLoading(true);
+
+    fetch("/api/usage", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (cancelled || !payload?.ok || !payload.data?.usage) return;
+        setUsage(payload.data.usage);
+      })
+      .catch(() => {
+        // Drawer remains usable if the live quota endpoint is unavailable.
+      })
+      .finally(() => {
+        if (!cancelled) setUsageLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, usage, usageLoading]);
 
   const planLabel = plan === "free" ? "Starter · Free" : plan === "pro" ? "Pro" : "Ultra";
 
@@ -183,6 +215,36 @@ export function MobileTopBar({
                 </div>
               </div>
 
+            <div className="rounded-2xl border border-border/70 bg-background/60 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">AI usage</p>
+                  <p className="mt-1 text-sm font-semibold">Today's allowance</p>
+                </div>
+                {usageLoading ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : null}
+              </div>
+              {usage ? (
+                <div className="mt-3 space-y-2.5">
+                  {([["Tutor", usage.tutor], ["Tutorials", usage.tutorial], ["Quizzes", usage.quiz], ["Photo solver", usage.image]] as const).map(([label, row]) => {
+                    const unlimited = row.limit >= 9007199254740000;
+                    const percent = unlimited ? 4 : Math.min(100, Math.round((row.used / Math.max(1, row.limit)) * 100));
+                    return (
+                      <div key={label} className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">{label}</span>
+                          <span className="font-medium">{unlimited ? "∞" : row.remaining + "/" + row.limit}</span>
+                        </div>
+                        <Progress value={percent} className="h-1.5" />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                  Usage loads when you open the menu. Your study tools remain available while it refreshes.
+                </p>
+              )}
+            </div>
               <div className="mt-5">
                 <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Learn</p>
                 <nav aria-label="Study navigation" className="mt-2 space-y-1">
