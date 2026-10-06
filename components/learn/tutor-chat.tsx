@@ -26,7 +26,7 @@ import { Markdown } from "@/components/learn/markdown";
 import { EmptyState } from "@/components/app/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -61,6 +61,9 @@ interface Props {
   board: string | null;
   remaining: number;
   limit: number;
+  streak: number;
+  studyMinutes: number;
+  xp: number;
   demo: boolean;
 }
 
@@ -73,6 +76,9 @@ export function TutorChat({
   board,
   remaining,
   limit,
+  streak,
+  studyMinutes,
+  xp,
   demo,
 }: Props) {
   const router = useRouter();
@@ -371,8 +377,8 @@ export function TutorChat({
   return (
     <div
       className={cn(
-        "grid min-w-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]",
-        focusMode && "fixed inset-0 z-[60] h-dvh w-full grid-cols-1 gap-0 bg-background p-0 lg:grid-cols-[280px_minmax(0,1fr)]",
+        "grid min-w-0 gap-4 lg:grid-cols-[230px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)_248px]",
+        focusMode && "fixed inset-0 z-[60] h-dvh w-full grid-cols-1 gap-0 bg-background p-0 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]",
       )}
     >
       {/* Conversation list (desktop) */}
@@ -380,7 +386,7 @@ export function TutorChat({
         <Card
           className={cn(
             "interactive-card flex flex-col p-3",
-            focusMode ? "h-dvh rounded-none border-y-0 border-l-0" : "h-[calc(100dvh-13rem)]",
+            focusMode ? "h-dvh rounded-none border-y-0 border-l-0" : "h-[min(720px,calc(100svh-12.5rem))] min-h-[560px]",
           )}
         >
           <Button variant="gradient" size="sm" className="w-full" onClick={startNewChat}>
@@ -427,13 +433,33 @@ export function TutorChat({
         </Card>
       </div>
 
+      {/* Quick study tools */}
+      <div className={cn("col-span-full flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:hidden", focusMode && "hidden")}>
+        {[
+          { label: "Teach me", prompt: "Teach me this topic step by step with a simple example." },
+          { label: "Exam mode", prompt: "Explain this topic for an exam, then give me 2 exam-style questions." },
+          { label: "Hint only", prompt: "Give me a hint for the problem without revealing the final answer." },
+          { label: "5-min revision", prompt: "Give me a 5-minute revision of this chapter with only the highest-value points." },
+        ].map((tool) => (
+          <button
+            key={tool.label}
+            type="button"
+            onClick={() => void send({ prompt: tool.prompt })}
+            disabled={streaming || exhausted}
+            className="shrink-0 rounded-xl border border-border/70 bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/[0.05] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {tool.label}
+          </button>
+        ))}
+      </div>
+
       {/* Chat */}
       <Card
         className={cn(
           "flex min-w-0 flex-col overflow-hidden",
           focusMode
             ? "h-dvh rounded-none border-0 shadow-none"
-            : "min-h-[560px] h-[calc(100dvh-var(--starvia-mobile-topbar)-var(--starvia-mobile-bottomnav)-7.5rem)] lg:h-[calc(100dvh-13rem)]",
+            : "h-[min(720px,calc(100svh-var(--starvia-mobile-topbar)-var(--starvia-mobile-bottomnav)-5.75rem))] min-h-[500px] lg:min-h-[560px]",
         )}
       >
         {demo ? (
@@ -490,7 +516,7 @@ export function TutorChat({
             atBottomRef.current = nearBottom;
             setShowLatest(!nearBottom);
           }}
-          className="relative flex-1 space-y-4 overscroll-contain overflow-y-auto px-4 py-5 pb-7"
+          className="relative flex-1 space-y-4 overscroll-contain overflow-y-auto px-4 py-4 pb-5 sm:px-5"
           aria-live={streaming ? "polite" : undefined}
         >
           {notice ? (
@@ -545,7 +571,7 @@ export function TutorChat({
               icon={Sparkles}
               title="Ask anything from your syllabus"
               description="Starvia explains at your class level — with examples, exam tips and a practice question."
-              className="border-none bg-transparent"
+              className="border-none bg-transparent py-10 sm:py-14"
             />
           ) : null}
 
@@ -670,6 +696,71 @@ export function TutorChat({
           </div>
         </div>
       </Card>
+
+      {/* Study cockpit */}
+      <aside className={cn("hidden min-w-0 flex-col gap-3 xl:flex", focusMode && "xl:hidden")}>
+        <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.07] via-card to-card">
+          <div className="p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Study cockpit</p>
+            <p className="mt-1 text-sm font-semibold">Your learning pulse</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Small, focused sessions beat long distracted ones.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-px border-t border-border/70 bg-border/70">
+            <div className="bg-card p-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Streak</p>
+              <p className="mt-1 text-lg font-semibold">{streak}<span className="text-xs text-muted-foreground">d</span></p>
+            </div>
+            <div className="bg-card p-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">XP</p>
+              <p className="mt-1 text-lg font-semibold">{xp}</p>
+            </div>
+            <div className="bg-card p-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Studied</p>
+              <p className="mt-1 text-lg font-semibold">{studyMinutes}<span className="text-xs text-muted-foreground">m</span></p>
+            </div>
+            <div className="bg-card p-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">AI left</p>
+              <p className={cn("mt-1 text-lg font-semibold", exhausted && "text-destructive")}>{remaining}/{limit}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs font-semibold">What Starvia is good at</p>
+            <div className="mt-3 space-y-2">
+              {[
+                "Break hard ideas into class-level steps",
+                "Turn chapters into exam-style practice",
+                "Give hints before revealing answers",
+                "Keep the thread of your conversation",
+              ].map((item) => (
+                <div key={item} className="flex gap-2 text-xs leading-5 text-muted-foreground">
+                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="grid gap-2 p-3">
+            <p className="px-1 text-xs font-semibold">Jump to a tool</p>
+            <Link href="/tutorials" className="rounded-xl border border-border/70 px-3 py-2.5 text-xs font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
+              Create a tutorial <span className="float-right text-muted-foreground">→</span>
+            </Link>
+            <Link href="/quiz" className="rounded-xl border border-border/70 px-3 py-2.5 text-xs font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
+              Generate a quiz <span className="float-right text-muted-foreground">→</span>
+            </Link>
+            <Link href="/solve" className="rounded-xl border border-border/70 px-3 py-2.5 text-xs font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
+              Solve a question <span className="float-right text-muted-foreground">→</span>
+            </Link>
+          </CardContent>
+        </Card>
+      </aside>
     </div>
   );
 }
