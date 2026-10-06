@@ -10,13 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { StudyPaper } from "@/lib/data/papers";
+import { STUDY_PAPERS, type StudyPaper } from "@/lib/data/papers";
 
 const STORAGE_KEY = "starvia-saved-papers";
 
 export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: string | null; initialClass?: string | null }) {
-  const [papers, setPapers] = React.useState<StudyPaper[]>([]);
-  const [q, setQ] = React.useState("");
+   const [q, setQ] = React.useState("");
   const [board, setBoard] = React.useState(initialBoard ?? "all");
   const [classLevel, setClassLevel] = React.useState(initialClass ?? "all");
   const [subject, setSubject] = React.useState("all");
@@ -24,7 +23,6 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
   const [type, setType] = React.useState("all");
   const [savedOnly, setSavedOnly] = React.useState(false);
   const [saved, setSaved] = React.useState<string[]>([]);
-  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     try {
@@ -33,22 +31,22 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
     } catch { /* local-only enhancement; ignore malformed storage */ }
   }, []);
 
-  React.useEffect(() => {
-    const controller = new AbortController();
-    const params = new URLSearchParams({ q, board, classLevel, subject, year, type });
-    setLoading(true);
-    fetch(`/api/papers?${params.toString()}`, { signal: controller.signal, cache: "no-store" })
-      .then((response) => {
-        if (!response.ok) throw new Error("Could not load papers.");
-        return response.json() as Promise<{ papers: StudyPaper[] }>;
-      })
-      .then((data) => setPapers(data.papers))
-      .catch((error) => {
-        if (error?.name !== "AbortError") toast.error("Paper library is temporarily unavailable.");
-      })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
-  }, [q, board, classLevel, subject, year, type]);
+  const visible = React.useMemo(() => {
+    const query = q.trim().toLowerCase();
+    return STUDY_PAPERS.filter((paper) => {
+      if (board !== "all" && paper.board !== board) return false;
+      if (classLevel !== "all" && paper.classLevel !== classLevel) return false;
+      if (subject !== "all" && paper.subject !== subject) return false;
+      if (year !== "all" && String(paper.year) !== year) return false;
+      if (type !== "all" && paper.type !== type) return false;
+      if (savedOnly && !saved.includes(paper.id)) return false;
+      if (!query) return true;
+      return [paper.title, paper.description, paper.subject, paper.board, paper.sourceLabel, ...paper.tags]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [board, classLevel, q, saved, savedOnly, subject, type, year]);
 
   function toggleSaved(id: string) {
     setSaved((current) => {
@@ -59,9 +57,8 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
     });
   }
 
-  const visible = savedOnly ? papers.filter((paper) => saved.includes(paper.id)) : papers;
-  const subjects = Array.from(new Set(papers.map((paper) => paper.subject))).sort();
-  const years = Array.from(new Set(papers.map((paper) => String(paper.year)))).sort().reverse();
+  const subjects = Array.from(new Set(STUDY_PAPERS.map((paper) => paper.subject))).sort();
+  const years = Array.from(new Set(STUDY_PAPERS.map((paper) => String(paper.year)))).sort().reverse();
 
   return (
     <div className="space-y-5">
@@ -88,7 +85,7 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
           <div className="grid gap-2 md:grid-cols-[1.5fr_repeat(5,minmax(0,1fr))]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
-              <Input value={q} onChange={(event) => setQ(event.target.value)} className="pl-9" placeholder="Search subject, year or paper..." />
+              <Input value={q} onChange={(event) => setQ(event.target.value)} className="pl-9" placeholder="Search subject, year or paper..." inputMode="search" />
             </div>
             <Select value={board} onValueChange={setBoard}><SelectTrigger><SelectValue placeholder="Board" /></SelectTrigger><SelectContent><SelectItem value="all">All boards</SelectItem><SelectItem value="CBSE">CBSE</SelectItem><SelectItem value="ICSE">ICSE</SelectItem></SelectContent></Select>
             <Select value={classLevel} onValueChange={setClassLevel}><SelectTrigger><SelectValue placeholder="Class" /></SelectTrigger><SelectContent><SelectItem value="all">All classes</SelectItem>{["6","7","8","9","10","11","12"].map((value)=><SelectItem key={value} value={value}>Class {value}</SelectItem>)}</SelectContent></Select>
@@ -97,7 +94,7 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
             <Select value={type} onValueChange={setType}><SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger><SelectContent><SelectItem value="all">All types</SelectItem>{["Board","Specimen"].map((value)=><SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 text-muted-foreground"><Filter className="size-3.5" /> {loading ? "Refreshing library..." : `${visible.length} papers`}</div>
+            <div className="flex items-center gap-2 text-muted-foreground"><Filter className="size-3.5" /> ${visible.length} ${visible.length === 1 ? "paper" : "papers"}</div>
             <Button type="button" size="sm" variant={savedOnly ? "secondary" : "ghost"} onClick={() => setSavedOnly((value) => !value)}>
               <Star className={savedOnly ? "size-4 fill-current" : "size-4"} /> {savedOnly ? "Showing saved" : "Saved papers"}
             </Button>
@@ -105,7 +102,7 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
         </CardContent>
       </Card>
 
-      {visible.length === 0 && !loading ? (
+      {visible.length === 0 ? (
         <Card className="border-dashed"><CardContent className="py-12 text-center"><FileText className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-medium">No matching papers</p><p className="mt-1 text-xs text-muted-foreground">Try another board, year or subject.</p></CardContent></Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -128,8 +125,8 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">{paper.description}</p>
                 <p className="mt-3 text-[11px] text-muted-foreground">{paper.sourceLabel}</p>
                 <div className="mt-auto flex gap-2 pt-5">
-                  <Button asChild size="sm" className="flex-1" variant="outline"><a href={paper.sourceUrl} target="_blank" rel="noreferrer"><ExternalLink className="size-3.5" /> Open paper</a></Button>
-                  <Button asChild size="sm" className="flex-1" variant="gradient"><Link href="/solve"><Sparkles className="size-3.5" /> Solve with AI</Link></Button>
+                  <Button asChild size="sm" className="min-w-0" variant="outline"><a href={paper.sourceUrl} target="_blank" rel="noreferrer"><ExternalLink className="size-3.5" /> Open paper</a></Button>
+                  <Button asChild size="sm" className="min-w-0" variant="gradient"><Link href="/solve"><Sparkles className="size-3.5" /> Solve with AI</Link></Button>
                 </div>
               </CardContent>
             </Card>
