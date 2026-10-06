@@ -105,22 +105,22 @@ export default async function DashboardPage() {
                 </Badge>
                 <Badge variant="secondary" className="gap-1.5">
                   <Flame className="size-3.5 text-orange-500" />
-                  ${snapshot.streak}-day streak
+                  {snapshot.streak}-day streak
                 </Badge>
               </div>
               <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
                 <div className="min-w-0">
                   <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">
-                    ${greeting}, ${snapshot.firstName} 👋
+                    {greeting}, {snapshot.firstName} 👋
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {${profile?.board ? `${profile.board} · ` : ""}Class ${profile?.class_level ?? "—"} · ${profile?.subjects?.slice(0, 3).join(", ") ?? "Build your subject set"}}
+                    {profile?.board ? `${profile.board} · ` : ""}Class {profile?.class_level ?? "—"} · {profile?.subjects?.slice(0, 3).join(", ") ?? "Build your subject set"}
                   </p>
-                  <h2 className="mt-5 max-w-2xl text-lg font-semibold sm:text-xl">${focus.title}</h2>
-                  <p className="mt-1.5 max-w-2xl text-[13px] leading-5 text-muted-foreground">${focus.description}</p>
+                  <h2 className="mt-5 max-w-2xl text-lg font-semibold sm:text-xl">{focus.title}</h2>
+                  <p className="mt-1.5 max-w-2xl text-[13px] leading-5 text-muted-foreground">{focus.description}</p>
                   <div className="mt-5 flex flex-wrap gap-2">
                     <Button asChild variant="gradient">
-                      <Link href={focus.href}>${focus.label}<ArrowRight className="size-4" /></Link>
+                      <Link href={focus.href}>{focus.label}<ArrowRight className="size-4" /></Link>
                     </Button>
                     <Button asChild variant="outline">
                       <Link href="/tutor"><Sparkles className="size-4" />Ask Starvia</Link>
@@ -130,15 +130,15 @@ export default async function DashboardPage() {
                 <div className="grid w-full max-w-sm grid-cols-3 gap-2">
                   <div className="rounded-2xl border border-border/70 bg-background/55 p-3">
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Today</p>
-                    <p className="mt-1 text-lg font-semibold">${formatMinutes(snapshot.todayMinutes)}</p>
+                    <p className="mt-1 text-lg font-semibold">{formatMinutes(snapshot.todayMinutes)}</p>
                   </div>
                   <div className="rounded-2xl border border-border/70 bg-background/55 p-3">
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Done</p>
-                    <p className="mt-1 text-lg font-semibold">${snapshot.completedToday}</p>
+                    <p className="mt-1 text-lg font-semibold">{snapshot.completedToday}</p>
                   </div>
                   <div className="rounded-2xl border border-border/70 bg-background/55 p-3">
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Level</p>
-                    <p className="mt-1 text-lg font-semibold">${snapshot.level.level}</p>
+                    <p className="mt-1 text-lg font-semibold">{snapshot.level.level}</p>
                   </div>
                 </div>
               </div>
@@ -158,9 +158,9 @@ export default async function DashboardPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">Current tier</p>
-                  <p className="mt-1 text-lg font-semibold">Level ${snapshot.level.level}</p>
+                  <p className="mt-1 text-lg font-semibold">Level {snapshot.level.level}</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {${snapshot.level.xpForNextLevel > snapshot.level.xpIntoLevel
+                    {{snapshot.level.xpForNextLevel > snapshot.level.xpIntoLevel
                       ? `${snapshot.level.xpForNextLevel - snapshot.level.xpIntoLevel} XP to your next level.`
                       : "Next level unlocked."}}
                   </p>
@@ -172,11 +172,11 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-border/70 p-3">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Personal best</p>
-                <p className="mt-1 text-base font-semibold">${profile?.longest_streak ?? 0} days</p>
+                <p className="mt-1 text-base font-semibold">{profile?.longest_streak ?? 0} days</p>
               </div>
               <div className="rounded-xl border border-border/70 p-3">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Today&apos;s goal</p>
-                <p className="mt-1 text-base font-semibold">${todayPercent}%</p>
+                <p className="mt-1 text-base font-semibold">{todayPercent}%</p>
               </div>
             </div>
           </CardContent>
