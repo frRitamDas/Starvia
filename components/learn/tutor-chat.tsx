@@ -4,11 +4,14 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDown,
   BookOpenCheck,
   Check,
   Copy,
   Loader2,
+  Maximize2,
   MessageSquarePlus,
+  Minimize2,
   RefreshCw,
   Send,
   Sparkles,
@@ -82,20 +85,45 @@ export function TutorChat({
   const [streamedText, setStreamedText] = React.useState("");
   const [notice, setNotice] = React.useState<string | null>(null);
   const [remainingLeft, setRemainingLeft] = React.useState(remaining);
+  const [focusMode, setFocusMode] = React.useState(false);
+  const [showLatest, setShowLatest] = React.useState(false);
+  const atBottomRef = React.useRef(true);
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const abortRef = React.useRef<AbortController | null>(null);
 
-  React.useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  const scrollToLatest = React.useCallback((behavior: ScrollBehavior = "smooth") => {
+    const element = scrollRef.current;
+    if (!element) return;
+    atBottomRef.current = true;
+    setShowLatest(false);
+    element.scrollTo({ top: element.scrollHeight, behavior });
+  }, []);
 
   React.useEffect(() => {
-    if (!streaming) return;
+    if (atBottomRef.current) scrollToLatest("smooth");
+  }, [messages, scrollToLatest]);
+
+  React.useEffect(() => {
+    if (!streaming || !atBottomRef.current) return;
     const element = scrollRef.current;
     if (element) element.scrollTop = element.scrollHeight;
   }, [streamedText, streaming]);
+
+  React.useEffect(() => {
+    if (!focusMode) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFocusMode(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [focusMode]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -314,7 +342,12 @@ export function TutorChat({
   }
 
   return (
-    <div className="grid min-w-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+    <div
+      className={cn(
+        "grid min-w-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]",
+        focusMode && "fixed inset-0 z-[60] h-dvh w-full grid-cols-1 gap-0 bg-background p-0 lg:grid-cols-[280px_minmax(0,1fr)]",
+      )}
+    >
       {/* Conversation list (desktop) */}
       <div className="hidden lg:block">
         <Card className="interactive-card flex h-[calc(100dvh-13rem)] flex-col p-3">
@@ -363,7 +396,14 @@ export function TutorChat({
       </div>
 
       {/* Chat */}
-      <Card className="flex min-w-0 h-[calc(100dvh-11rem)] flex-col overflow-hidden lg:h-[calc(100dvh-13rem)]">
+      <Card
+        className={cn(
+          "flex min-w-0 flex-col overflow-hidden",
+          focusMode
+            ? "h-dvh rounded-none border-0 shadow-none"
+            : "h-[calc(100dvh-var(--starvia-mobile-topbar)-var(--starvia-mobile-bottomnav)-4rem)] lg:h-[calc(100dvh-13rem)]",
+        )}
+      >
         {demo ? (
           <p className="border-b border-warning/30 bg-warning/[0.08] px-4 py-2 text-[11.5px] text-muted-foreground">
             Demo mode — replies are placeholders until a Gemini API key is configured. History, quotas
@@ -384,10 +424,19 @@ export function TutorChat({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={exhausted ? "destructive" : "secondary"} className="shrink-0">
+          <div className="flex items-center gap-1.5">
+            <Badge variant={exhausted ? "destructive" : "secondary"} className="hidden shrink-0 sm:inline-flex">
               {remainingLeft}/{limit} left
             </Badge>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={focusMode ? "Exit full-screen chat" : "Open full-screen chat"}
+              title={focusMode ? "Exit full-screen chat" : "Full-screen chat"}
+              onClick={() => setFocusMode((value) => !value)}
+            >
+              {focusMode ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+            </Button>
             <Button
               variant="ghost"
               size="icon-sm"
@@ -400,11 +449,35 @@ export function TutorChat({
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
+        <div
+          ref={scrollRef}
+          onScroll={(event) => {
+            const element = event.currentTarget;
+            const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
+            const nearBottom = distance < 72;
+            atBottomRef.current = nearBottom;
+            setShowLatest(!nearBottom);
+          }}
+          className="relative flex-1 space-y-4 overscroll-contain overflow-y-auto px-4 py-5"
+          aria-live={streaming ? "polite" : undefined}
+        >
           {notice ? (
             <p className="rounded-xl border border-warning/30 bg-warning/[0.08] px-3 py-2 text-xs">
               {notice}
             </p>
+          ) : null}
+
+          {showLatest ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="sticky bottom-2 left-1/2 z-10 -ml-1 -translate-x-1/2 gap-1.5 shadow-lg"
+              onClick={() => scrollToLatest("smooth")}
+            >
+              <ArrowDown className="size-3.5" />
+              Jump to latest
+            </Button>
           ) : null}
 
           {messages.length === 0 && !streaming ? (
