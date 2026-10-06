@@ -16,6 +16,7 @@ import {
   Target,
   Timer,
   TrendingUp,
+  Trophy,
 } from "lucide-react";
 
 import { EmptyState } from "@/components/app/empty-state";
