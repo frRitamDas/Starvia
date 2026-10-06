@@ -130,10 +130,13 @@ export default async function LandingPage() {
               </Button>
             </div>
 
-            <div className="mx-auto mt-7 flex max-w-3xl flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground sm:text-sm">
+            <div className="mx-auto mt-7 flex max-w-4xl flex-wrap justify-center gap-2 text-xs text-muted-foreground sm:text-sm">
               {TRUST_POINTS.map((point) => (
-                <span key={point} className="inline-flex items-center gap-1.5">
-                  <Check className="size-3.5 text-foreground" /> {point}
+                <span
+                  key={point}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 backdrop-blur-sm transition-colors hover:bg-accent/60"
+                >
+                  <Check className="size-3.5 shrink-0 text-foreground" aria-hidden="true" /> {point}
                 </span>
               ))}
             </div>
