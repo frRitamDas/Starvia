@@ -90,7 +90,7 @@ export default async function DashboardPage() {
         };
 
   return (
-    <div className="space-y-6 stagger-enter">
+    <div className="space-y-6">
       {/* Greeting */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
