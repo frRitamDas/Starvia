@@ -7,16 +7,21 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STUDY_PAPERS, type StudyPaper } from "@/lib/data/papers";
 
 const STORAGE_KEY = "starvia-saved-papers";
 
+function normalizeBoard(value?: string | null) {
+  const board = value?.toUpperCase();
+  return board === "CBSE" || board === "ICSE" ? board : "all";
+}
+
 export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: string | null; initialClass?: string | null }) {
-   const [q, setQ] = React.useState("");
-  const [board, setBoard] = React.useState(initialBoard ?? "all");
+  const [q, setQ] = React.useState("");
+  const [board, setBoard] = React.useState(() => normalizeBoard(initialBoard));
   const [classLevel, setClassLevel] = React.useState(initialClass ?? "all");
   const [subject, setSubject] = React.useState("all");
   const [year, setYear] = React.useState("all");
@@ -51,7 +56,11 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
   function toggleSaved(id: string) {
     setSaved((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // The list remains usable if storage is blocked by the browser.
+      }
       toast.success(current.includes(id) ? "Removed from saved papers." : "Saved to this device.");
       return next;
     });
@@ -94,7 +103,7 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
             <Select value={type} onValueChange={setType}><SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger><SelectContent><SelectItem value="all">All types</SelectItem>{["Board","Specimen"].map((value)=><SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 text-muted-foreground"><Filter className="size-3.5" /> ${visible.length} ${visible.length === 1 ? "paper" : "papers"}</div>
+            <div className="flex items-center gap-2 text-muted-foreground"><Filter className="size-3.5" /> {visible.length} {visible.length === 1 ? "paper" : "papers"}</div>
             <Button type="button" size="sm" variant={savedOnly ? "secondary" : "ghost"} onClick={() => setSavedOnly((value) => !value)}>
               <Star className={savedOnly ? "size-4 fill-current" : "size-4"} /> {savedOnly ? "Showing saved" : "Saved papers"}
             </Button>
