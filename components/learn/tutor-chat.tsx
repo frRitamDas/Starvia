@@ -377,7 +377,7 @@ export function TutorChat({
   return (
     <div
       className={cn(
-        "grid min-w-0 gap-4 lg:grid-cols-[230px_minmax(0,1fr)] xl:grid-cols-[230px_minmax(0,1fr)_248px]",
+        "grid min-w-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_300px]",
         focusMode && "fixed inset-0 z-[60] h-dvh w-full grid-cols-1 gap-0 bg-background p-0 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]",
       )}
     >
@@ -698,7 +698,7 @@ export function TutorChat({
       </Card>
 
       {/* Study cockpit */}
-      <aside className={cn("hidden min-w-0 flex-col gap-3 xl:flex", focusMode && "xl:hidden")}>
+      <aside className={cn("hidden min-w-0 flex-col gap-3 xl:flex xl:max-h-[calc(100svh-10.5rem)]", focusMode && "xl:hidden")}>
         <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.07] via-card to-card">
           <div className="p-4">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Study cockpit</p>
@@ -710,7 +710,7 @@ export function TutorChat({
           <div className="grid grid-cols-2 gap-px border-t border-border/70 bg-border/70">
             <div className="bg-card p-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Streak</p>
-              <p className="mt-1 text-lg font-semibold">{streak}<span className="text-xs text-muted-foreground">d</span></p>
+              <p className="mt-1 text-lg font-semibold">{streak} <span className="text-xs text-muted-foreground">{streak === 1 ? "day" : "days"}</span></p>
             </div>
             <div className="bg-card p-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">XP</p>
@@ -732,10 +732,10 @@ export function TutorChat({
             <p className="text-xs font-semibold">What Starvia is good at</p>
             <div className="mt-3 space-y-2">
               {[
-                "Break hard ideas into class-level steps",
-                "Turn chapters into exam-style practice",
-                "Give hints before revealing answers",
-                "Keep the thread of your conversation",
+                "Explain hard ideas in class-level steps",
+                "Turn chapters into exam practice",
+                "Give hints before the final answer",
+                "Keep the conversation context",
               ].map((item) => (
                 <div key={item} className="flex gap-2 text-xs leading-5 text-muted-foreground">
                   <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
@@ -749,15 +749,20 @@ export function TutorChat({
         <Card>
           <CardContent className="grid gap-2 p-3">
             <p className="px-1 text-xs font-semibold">Jump to a tool</p>
-            <Link href="/tutorials" className="rounded-xl border border-border/70 px-3 py-2.5 text-xs font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
-              Create a tutorial <span className="float-right text-muted-foreground">→</span>
-            </Link>
-            <Link href="/quiz" className="rounded-xl border border-border/70 px-3 py-2.5 text-xs font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
-              Generate a quiz <span className="float-right text-muted-foreground">→</span>
-            </Link>
-            <Link href="/solve" className="rounded-xl border border-border/70 px-3 py-2.5 text-xs font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
-              Solve a question <span className="float-right text-muted-foreground">→</span>
-            </Link>
+            <div className="grid grid-cols-2 gap-2">
+              <Link href="/tutorials" className="rounded-xl border border-border/70 px-2.5 py-2.5 text-[11px] font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
+                Tutorial
+              </Link>
+              <Link href="/quiz" className="rounded-xl border border-border/70 px-2.5 py-2.5 text-[11px] font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
+                Quiz
+              </Link>
+              <Link href="/solve" className="rounded-xl border border-border/70 px-2.5 py-2.5 text-[11px] font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
+                Solve
+              </Link>
+              <Link href="/exam-prep" className="rounded-xl border border-border/70 px-2.5 py-2.5 text-[11px] font-medium transition-colors hover:border-primary/30 hover:bg-primary/[0.04]">
+                Exam prep
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </aside>
