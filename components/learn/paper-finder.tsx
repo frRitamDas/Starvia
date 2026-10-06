@@ -115,8 +115,8 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
         <Card className="border-dashed"><CardContent className="py-12 text-center"><FileText className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-medium">No matching papers</p><p className="mt-1 text-xs text-muted-foreground">Try another board, year or subject.</p></CardContent></Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {visible.map((paper, index) => (
-            <Card key={paper.id} className="interactive-card content-auto" style={index < 6 ? { animationDelay: `${index * 25}ms` } : undefined}>
+          {visible.map((paper) => (
+            <Card key={paper.id} className="interactive-card content-auto">
               <CardContent className="flex h-full flex-col p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary"><FileText className="size-5" /></div>
