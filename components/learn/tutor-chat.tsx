@@ -114,15 +114,20 @@ export function TutorChat({
 
   React.useEffect(() => {
     if (!focusMode) return;
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.dataset.chatFocus = "true";
     requestAnimationFrame(() => textareaRef.current?.focus());
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setFocusMode(false);
     };
+
     window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
+      delete document.body.dataset.chatFocus;
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [focusMode]);
@@ -419,7 +424,7 @@ export function TutorChat({
           "flex min-w-0 flex-col overflow-hidden",
           focusMode
             ? "h-dvh rounded-none border-0 shadow-none"
-            : "h-[calc(100dvh-var(--starvia-mobile-topbar)-var(--starvia-mobile-bottomnav)-4rem)] lg:h-[calc(100dvh-13rem)]",
+            : "min-h-[560px] h-[calc(100dvh-var(--starvia-mobile-topbar)-var(--starvia-mobile-bottomnav)-7.5rem)] lg:h-[calc(100dvh-13rem)]",
         )}
       >
         {demo ? (
@@ -476,7 +481,7 @@ export function TutorChat({
             atBottomRef.current = nearBottom;
             setShowLatest(!nearBottom);
           }}
-          className="relative flex-1 space-y-4 overscroll-contain overflow-y-auto px-4 py-5"
+          className="relative flex-1 space-y-4 overscroll-contain overflow-y-auto px-4 py-5 pb-7"
           aria-live={streaming ? "polite" : undefined}
         >
           {notice ? (
@@ -538,7 +543,7 @@ export function TutorChat({
         </div>
 
         {/* Composer */}
-        <div className="border-t border-border/70 bg-card/60 p-3">
+        <div className="border-t border-border/70 bg-card/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
           {messages.length === 0 && !streaming ? (
             <div className="mb-2.5 flex flex-wrap gap-2">
               {STARTERS.map((starter) => (
