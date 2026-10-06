@@ -254,12 +254,17 @@ export async function generateText(options: GenerateOptions): Promise<GenerateRe
     }
   }
 
-  if (serverEnv.geminiApiKey) {
-    return generateTextGemini(options);
+  if (serverEnv.aiProvider === "openrouter" && openRouterSupportsRequest(options)) {
+    try {
+      return await generateTextOpenRouter(options);
+    } catch (error) {
+      console.warn("[ai] OpenRouter request failed before completion; using Gemini fallback.", error);
+      if (!serverEnv.geminiApiKey) throw error;
+    }
   }
 
-  if (serverEnv.aiProvider === "openrouter" && openRouterSupportsRequest(options)) {
-    return generateTextOpenRouter(options);
+  if (serverEnv.geminiApiKey) {
+    return generateTextGemini(options);
   }
 
   if (naraRouterSupportsRequest(options) && naraRouterConfigured()) {
