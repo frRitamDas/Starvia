@@ -12,6 +12,7 @@ import {
   Play,
   ScanLine,
   Sparkles,
+  CirclePlay,
   Target,
   Timer,
   TrendingUp,
@@ -67,6 +68,27 @@ export default async function DashboardPage() {
 
   const usageFeatures: AiFeature[] = ["tutor", "tutorial", "quiz", "image"];
 
+  const focus = snapshot.continueTutorial
+    ? {
+        title: `Continue ${snapshot.continueTutorial.title}`,
+        description: `${snapshot.continueTutorial.subject} · pick up exactly where you stopped.`,
+        href: `/tutorials/${snapshot.continueTutorial.id}`,
+        label: "Resume lesson",
+      }
+    : snapshot.weakTopics[0]
+      ? {
+          title: `Fix ${snapshot.weakTopics[0].topic}`,
+          description: snapshot.weakTopics[0].reason,
+          href: `/tutorials?topic=${encodeURIComponent(snapshot.weakTopics[0].topic)}`,
+          label: "Revise now",
+        }
+      : {
+          title: "Start a focused AI session",
+          description: "Ask one question, practise it, and let Starvia decide the next useful step.",
+          href: "/tutor",
+          label: "Ask Starvia",
+        };
+
   return (
     <div className="space-y-6 stagger-enter">
       {/* Greeting */}
@@ -91,6 +113,23 @@ export default async function DashboardPage() {
           </Badge>
         </div>
       </div>
+
+      {/* Next best action */}
+      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.07] via-card to-card">
+        <CardContent className="grid gap-5 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
+          <div className="min-w-0">
+            <Badge variant="outline" className="gap-1.5 border-primary/25 bg-primary/[0.05]">
+              <CirclePlay className="size-3.5 text-primary" />
+              Today&apos;s focus
+            </Badge>
+            <h2 className="mt-3 truncate text-lg font-semibold sm:text-xl">{focus.title}</h2>
+            <p className="mt-1 max-w-2xl text-[13px] leading-5 text-muted-foreground">{focus.description}</p>
+          </div>
+          <Button asChild variant="gradient" className="w-full sm:w-auto">
+            <Link href={focus.href}>{focus.label}<ArrowRight className="size-4" /></Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
