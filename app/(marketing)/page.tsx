@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { CtaBand } from "@/components/marketing/cta-band";
+import { ExperienceUpgrade } from "@/components/marketing/experience-upgrade";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { Eyebrow, Section, SectionHeading } from "@/components/marketing/section";
@@ -138,6 +139,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <ExperienceUpgrade />
 
       {/* Personalised entry point */}
       <Section id="tools" className="py-16 sm:py-20">
