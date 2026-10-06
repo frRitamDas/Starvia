@@ -116,7 +116,7 @@ export function PaperFinder({ initialBoard, initialClass }: { initialBoard?: str
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((paper, index) => (
-            <Card key={paper.id} className="interactive-card page-enter" style={{ animationDelay: `${Math.min(index,8) * 35}ms` }}>
+            <Card key={paper.id} className="interactive-card content-auto" style={index < 6 ? { animationDelay: `${index * 25}ms` } : undefined}>
               <CardContent className="flex h-full flex-col p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary"><FileText className="size-5" /></div>
