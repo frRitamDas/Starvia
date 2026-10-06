@@ -4,9 +4,16 @@ import type { AiContent, GenerateOptions, GenerateResult, ModelAlias, StreamChun
 
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
+type OpenRouterContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
 interface ChatCompletionResponse {
   model?: string;
-  choices?: Array<{ message?: { content?: string | null }; finish_reason?: string | null }>;
+  choices?: Array<{
+    message?: { content?: string | OpenRouterContentPart[] | null };
+    finish_reason?: string | null;
+  }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
 }
 
@@ -24,16 +31,27 @@ function baseUrl() {
   return (serverEnv.openRouterBaseUrl || DEFAULT_BASE_URL).replace(/\/$/, "");
 }
 
-function hasInlineImage(options: GenerateOptions) {
-  return options.messages.some((message) => message.parts.some((part) => Boolean(part.inlineData)));
-}
-
-function textFromParts(parts: AiContent["parts"]) {
-  return parts.map((part) => part.text ?? "").filter(Boolean).join("\n");
+function toOpenRouterParts(parts: AiContent["parts"]): OpenRouterContentPart[] {
+  return parts.flatMap((part) => {
+    const items: OpenRouterContentPart[] = [];
+    if (part.text?.trim()) items.push({ type: "text", text: part.text });
+    if (part.inlineData?.data) {
+      items.push({
+        type: "image_url",
+        image_url: {
+          url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
+        },
+      });
+    }
+    return items;
+  });
 }
 
 function buildMessages(options: GenerateOptions) {
-  const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [];
+  const messages: Array<{
+    role: "system" | "user" | "assistant";
+    content: string | OpenRouterContentPart[];
+  }> = [];
   const systemParts = [options.system?.trim() ?? ""];
   if (options.responseMimeType === "application/json") {
     systemParts.push("Return only valid JSON. Do not wrap JSON in Markdown fences or add explanatory text.");
@@ -42,8 +60,12 @@ function buildMessages(options: GenerateOptions) {
   if (system) messages.push({ role: "system", content: system });
 
   for (const message of options.messages) {
-    const content = textFromParts(message.parts);
-    if (!content) continue;
+    const contentParts = toOpenRouterParts(message.parts);
+    if (contentParts.length === 0) continue;
+    const content =
+      contentParts.length === 1 && contentParts[0]?.type === "text"
+        ? contentParts[0].text
+        : contentParts;
     messages.push({ role: message.role === "model" ? "assistant" : "user", content });
   }
   return messages;
@@ -103,7 +125,7 @@ export function openRouterConfigured() {
 }
 
 export function openRouterSupportsRequest(options: GenerateOptions) {
-  return openRouterConfigured() && !hasInlineImage(options);
+  return openRouterConfigured();
 }
 
 export async function generateTextOpenRouter(options: GenerateOptions): Promise<GenerateResult> {
@@ -124,7 +146,15 @@ export async function generateTextOpenRouter(options: GenerateOptions): Promise<
     throw new AiError("bad_response", "AI returned an unreadable response. Please try again.");
   }
 
-  const text = parsed.choices?.[0]?.message?.content?.trim() ?? "";
+  const rawContent = parsed.choices?.[0]?.message?.content;
+  const text =
+    typeof rawContent === "string"
+      ? rawContent.trim()
+      : (rawContent ?? [])
+          .filter((part): part is { type: "text"; text: string } => part.type === "text" && Boolean(part.text))
+          .map((part) => part.text)
+          .join("")
+          .trim();
   if (!text) throw new AiError("bad_response", "AI didn't return an answer. Please try again.");
 
   return {
