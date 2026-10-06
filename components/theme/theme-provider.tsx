@@ -26,6 +26,24 @@ function systemTheme(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+function readStoredTheme(): Theme {
+  if (typeof window === "undefined") return "system";
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+  } catch {
+    return "system";
+  }
+}
+
+function persistTheme(theme: Theme): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // Theme changes still work in browsers with blocked storage.
+  }
+}
+
 function applyTheme(theme: Theme) {
   const resolved = theme === "system" ? systemTheme() : theme;
   const root = document.documentElement;
@@ -39,13 +57,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = React.useState<"light" | "dark">("light");
 
   React.useEffect(() => {
-    const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
+    const stored = readStoredTheme();
     setThemeState(stored);
     setResolvedTheme(applyTheme(stored));
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const listener = () => {
-      const current = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
+      const current = readStoredTheme();
       if (current === "system") setResolvedTheme(applyTheme("system"));
     };
     media.addEventListener("change", listener);
@@ -53,13 +71,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setTheme = React.useCallback((next: Theme) => {
-    localStorage.setItem(STORAGE_KEY, next);
+    persistTheme(next);
     setThemeState(next);
     setResolvedTheme(applyTheme(next));
   }, []);
 
   const toggle = React.useCallback(() => {
-    const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
+    const stored = readStoredTheme();
     const current = stored === "system" ? systemTheme() : stored;
     setTheme(current === "dark" ? "light" : "dark");
   }, [setTheme]);
