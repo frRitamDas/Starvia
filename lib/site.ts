@@ -28,6 +28,7 @@ export const siteConfig = {
   url: publicEnv.siteUrl,
   nav: [
     { title: "Features", href: "/#tools" },
+    { title: "Past Papers", href: "/papers" },
     { title: "How it works", href: "/#how-it-works" },
     { title: "Pricing", href: "/#pricing" },
     { title: "FAQ", href: "/#faq" },
