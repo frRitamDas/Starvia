@@ -91,45 +91,96 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Greeting */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-[28px]">
-            {greeting}, {snapshot.firstName} 👋
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {profile?.board ? `${profile.board} · ` : ""}Class {profile?.class_level ?? "—"} ·{" "}
-            {profile?.subjects?.slice(0, 3).join(", ") ?? "Add your subjects"}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={snapshot.streak > 0 ? "warning" : "secondary"} className="gap-1.5">
-            <Flame className={cn("size-3.5", snapshot.streak > 0 && "text-orange-500")} />
-            {snapshot.streak}-day streak
-          </Badge>
-          <Badge variant="secondary" className="gap-1.5">
-            <Target className="size-3.5" />
-            Level {snapshot.level.level}
-          </Badge>
-        </div>
-      </div>
+      {/* Today at Starvia */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.55fr)]">
+        <Card className="ambient-study-shell overflow-hidden border-primary/20">
+          <CardContent className="relative p-5 sm:p-6 lg:p-7">
+            <div className="absolute -right-20 -top-24 size-56 rounded-full bg-blue-500/10 blur-3xl" aria-hidden />
+            <div className="relative">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="gap-1.5 border-primary/25 bg-primary/[0.05]">
+                  <CirclePlay className="size-3.5 text-primary" />
+                  Today&apos;s mission
+                </Badge>
+                <Badge variant="secondary" className="gap-1.5">
+                  <Flame className="size-3.5 text-orange-500" />
+                  ${snapshot.streak}-day streak
+                </Badge>
+              </div>
+              <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div className="min-w-0">
+                  <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">
+                    ${greeting}, ${snapshot.firstName} 👋
+                  </h1>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {${profile?.board ? `${profile.board} · ` : ""}Class ${profile?.class_level ?? "—"} · ${profile?.subjects?.slice(0, 3).join(", ") ?? "Build your subject set"}}
+                  </p>
+                  <h2 className="mt-5 max-w-2xl text-lg font-semibold sm:text-xl">${focus.title}</h2>
+                  <p className="mt-1.5 max-w-2xl text-[13px] leading-5 text-muted-foreground">${focus.description}</p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Button asChild variant="gradient">
+                      <Link href={focus.href}>${focus.label}<ArrowRight className="size-4" /></Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                      <Link href="/tutor"><Sparkles className="size-4" />Ask Starvia</Link>
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid w-full max-w-sm grid-cols-3 gap-2">
+                  <div className="rounded-2xl border border-border/70 bg-background/55 p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Today</p>
+                    <p className="mt-1 text-lg font-semibold">${formatMinutes(snapshot.todayMinutes)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/70 bg-background/55 p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Done</p>
+                    <p className="mt-1 text-lg font-semibold">${snapshot.completedToday}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/70 bg-background/55 p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Level</p>
+                    <p className="mt-1 text-lg font-semibold">${snapshot.level.level}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Next best action */}
-      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.07] via-card to-card">
-        <CardContent className="grid gap-5 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
-          <div className="min-w-0">
-            <Badge variant="outline" className="gap-1.5 border-primary/25 bg-primary/[0.05]">
-              <CirclePlay className="size-3.5 text-primary" />
-              Today&apos;s focus
-            </Badge>
-            <h2 className="mt-3 truncate text-lg font-semibold sm:text-xl">{focus.title}</h2>
-            <p className="mt-1 max-w-2xl text-[13px] leading-5 text-muted-foreground">{focus.description}</p>
-          </div>
-          <Button asChild variant="gradient" className="w-full sm:w-auto">
-            <Link href={focus.href}>{focus.label}<ArrowRight className="size-4" /></Link>
-          </Button>
-        </CardContent>
-      </Card>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base">
+              Study League
+              <Badge variant="secondary">{context.plan === "free" ? "Starter" : context.plan === "pro" ? "Pro" : "Ultra"}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-2xl border border-primary/15 bg-primary/[0.04] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">Current tier</p>
+                  <p className="mt-1 text-lg font-semibold">Level ${snapshot.level.level}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {${snapshot.level.xpForNextLevel > snapshot.level.xpIntoLevel
+                      ? `${snapshot.level.xpForNextLevel - snapshot.level.xpIntoLevel} XP to your next level.`
+                      : "Next level unlocked."}}
+                  </p>
+                </div>
+                <Trophy className="size-5 text-primary" />
+              </div>
+              <Progress value={snapshot.level.progress} className="mt-4 h-1.5" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl border border-border/70 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Personal best</p>
+                <p className="mt-1 text-base font-semibold">${profile?.longest_streak ?? 0} days</p>
+              </div>
+              <div className="rounded-xl border border-border/70 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Today&apos;s goal</p>
+                <p className="mt-1 text-base font-semibold">${todayPercent}%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
