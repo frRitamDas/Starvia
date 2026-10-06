@@ -46,9 +46,10 @@ const LANGUAGE_OPTIONS = [
 ] as const;
 
 const STARTERS = [
-  "Explain photosynthesis for my class level",
-  "Why do we get marks cut in numericals?",
-  "Give me 3 practice questions on this chapter",
+  "Explain this topic at my class level",
+  "Teach me with a simple example",
+  "Give me 3 exam-style practice questions",
+  "Give me a hint, not the full answer",
 ];
 
 interface Props {
@@ -85,6 +86,8 @@ export function TutorChat({
   const [streaming, setStreaming] = React.useState(false);
   const [streamedText, setStreamedText] = React.useState("");
   const [notice, setNotice] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [lastFailedPrompt, setLastFailedPrompt] = React.useState<string | null>(null);
   const [remainingLeft, setRemainingLeft] = React.useState(remaining);
   const [focusMode, setFocusMode] = React.useState(false);
   const [showLatest, setShowLatest] = React.useState(false);
@@ -204,6 +207,8 @@ export function TutorChat({
 
     setStreaming(true);
     setNotice(null);
+    setErrorMessage(null);
+    setLastFailedPrompt(null);
     setStreamedText("");
     setInput("");
 
@@ -298,6 +303,8 @@ export function TutorChat({
               },
             ]);
             setStreamedText("");
+            setErrorMessage(null);
+            setLastFailedPrompt(null);
             setRemainingLeft((value) => Math.max(0, value - 1));
             const achievements = (payload.achievements as { title: string }[] | undefined) ?? [];
             achievements.forEach((achievement) =>
@@ -325,6 +332,8 @@ export function TutorChat({
         error instanceof ApiClientError
           ? error.message
           : "AI is temporarily unavailable. Please try again.";
+      setErrorMessage(message);
+      setLastFailedPrompt(prompt);
       toast.error(message);
       if (error instanceof ApiClientError && error.code === "LIMIT_REACHED") {
         setRemainingLeft(0);
@@ -429,7 +438,7 @@ export function TutorChat({
       >
         {demo ? (
           <p className="border-b border-warning/30 bg-warning/[0.08] px-4 py-2 text-[11.5px] text-muted-foreground">
-            Demo mode — replies are placeholders until a Gemini API key is configured. History, quotas
+            Demo mode — replies are placeholders until a production AI provider is configured. History, quotas
             and the full flow still work.
           </p>
         ) : null}
@@ -443,12 +452,12 @@ export function TutorChat({
                 {conversations.find((item) => item.id === activeId)?.title ?? "New conversation"}
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                {board ?? "CBSE"} · Class {classLevel ?? "—"}
+                {board ?? "CBSE"} · Class {classLevel ?? "—"} · {demo ? "Demo mode" : "AI tutor ready"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <Badge variant={exhausted ? "destructive" : "secondary"} className="hidden shrink-0 sm:inline-flex">
+            <Badge variant={exhausted ? "destructive" : "secondary"} className="shrink-0 text-[11px]">
               {remainingLeft}/{limit} left
             </Badge>
             <Button
@@ -488,6 +497,34 @@ export function TutorChat({
             <p className="rounded-xl border border-warning/30 bg-warning/[0.08] px-3 py-2 text-xs">
               {notice}
             </p>
+          ) : null}
+
+          {errorMessage ? (
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/[0.06] px-3.5 py-3"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-destructive">We couldn't finish that answer.</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{errorMessage}</p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0 gap-1.5"
+                onClick={() => {
+                  const retryPrompt = lastFailedPrompt;
+                  setErrorMessage(null);
+                  setLastFailedPrompt(null);
+                  if (retryPrompt) void send({ prompt: retryPrompt });
+                }}
+                disabled={streaming || !lastFailedPrompt}
+              >
+                <RefreshCw className="size-3.5" />
+                Retry
+              </Button>
+            </div>
           ) : null}
 
           {showLatest ? (
@@ -545,7 +582,7 @@ export function TutorChat({
         {/* Composer */}
         <div className="border-t border-border/70 bg-card/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
           {messages.length === 0 && !streaming ? (
-            <div className="mb-2.5 flex flex-wrap gap-2">
+            <div className="mb-2.5 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {STARTERS.map((starter) => (
                 <button
                   key={starter}
@@ -577,7 +614,7 @@ export function TutorChat({
                   : "Ask a doubt, or paste a question…"
               }
               disabled={streaming || exhausted}
-              className="max-h-40 min-h-[46px] resize-none"
+              className="max-h-40 min-h-[46px] resize-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary/30"
               aria-label="Your question"
             />
             <Button
