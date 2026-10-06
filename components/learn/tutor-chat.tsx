@@ -64,6 +64,7 @@ interface Props {
   streak: number;
   studyMinutes: number;
   xp: number;
+  aiReady: boolean;
   demo: boolean;
 }
 
@@ -79,6 +80,7 @@ export function TutorChat({
   streak,
   studyMinutes,
   xp,
+  aiReady,
   demo,
 }: Props) {
   const router = useRouter();
@@ -478,7 +480,8 @@ export function TutorChat({
                 {conversations.find((item) => item.id === activeId)?.title ?? "New conversation"}
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                {board ?? "CBSE"} · Class {classLevel ?? "—"} · {demo ? "Demo mode" : "AI tutor ready"}
+                {board ?? "CBSE"} · Class {classLevel ?? "—"} ·{" "}
+                {demo ? "Demo mode" : aiReady ? "AI tutor ready" : "AI provider needs a key"}
               </p>
             </div>
           </div>
