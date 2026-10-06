@@ -64,11 +64,11 @@ export function AppSidebar({ footer }: { footer?: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-border/70 bg-card/40 lg:flex lg:flex-col">
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 self-start overflow-hidden border-r border-border/70 bg-card/55 lg:flex lg:flex-col">
       <div className="flex h-16 items-center px-5">
         <StarviaLogo />
       </div>
-      <nav aria-label="Study navigation" className="flex-1 space-y-1 px-3 py-2">
+      <nav aria-label="Study navigation" className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -85,7 +85,7 @@ export function AppSidebar({ footer }: { footer?: React.ReactNode }) {
           </Link>
         ))}
       </nav>
-      {footer ? <div className="border-t border-border/70 p-3">{footer}</div> : null}
+      {footer ? <div className="shrink-0 border-t border-border/70 bg-background/45 p-3">{footer}</div> : null}
     </aside>
   );
 }
