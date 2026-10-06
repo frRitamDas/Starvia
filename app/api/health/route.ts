@@ -18,7 +18,9 @@ export async function GET() {
         integrations: status,
         warnings: [
           ...(status.supabase ? [] : ["Supabase is not configured — auth and data storage are disabled."]),
-          ...(status.gemini ? [] : ["GEMINI_API_KEY is missing — AI features will return NOT_CONFIGURED."]),
+          ...(status.gemini || status.openRouter || status.naraRouter
+            ? []
+            : ["No AI provider is configured — AI features will be unavailable."]),
           ...(status.razorpay ? [] : ["Razorpay keys are missing — upgrades are disabled."]),
         ],
       },
