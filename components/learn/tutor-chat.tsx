@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Send,
   Sparkles,
+  Square,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -302,7 +303,10 @@ export function TutorChat({
 
       router.refresh();
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setNotice("Response stopped. You can continue the conversation whenever you are ready.");
+        return;
+      }
       const message =
         error instanceof ApiClientError
           ? error.message
@@ -561,11 +565,18 @@ export function TutorChat({
               variant="gradient"
               size="icon"
               className="size-[46px] shrink-0"
-              onClick={() => send()}
-              disabled={streaming || exhausted || !input.trim()}
-              aria-label="Send message"
+              onClick={() => {
+                if (streaming) {
+                  abortRef.current?.abort();
+                } else {
+                  void send();
+                }
+              }}
+              disabled={exhausted || (!streaming && !input.trim())}
+              aria-label={streaming ? "Stop response" : "Send message"}
+              title={streaming ? "Stop response" : "Send message"}
             >
-              {streaming ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              {streaming ? <Square className="size-4 fill-current" /> : <Send className="size-4" />}
             </Button>
           </div>
 
