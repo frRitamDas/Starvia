@@ -3,6 +3,7 @@ import "./globals.css";
 import "@fontsource-variable/inter/index.css";
 
 import { Toaster } from "@/components/ui/sonner";
+import { NotificationSoundController } from "@/components/app/notification-sound-controller";
 import { ThemeProvider, themeInitScript } from "@/components/theme/theme-provider";
 import { siteConfig } from "@/lib/site";
 
@@ -74,6 +75,7 @@ export default function RootLayout({
           </a>
           {children}
           <Toaster />
+          <NotificationSoundController />
         </ThemeProvider>
       </body>
     </html>
