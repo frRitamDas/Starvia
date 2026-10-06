@@ -89,7 +89,13 @@ export function TutorChat({
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, streamedText]);
+  }, [messages]);
+
+  React.useEffect(() => {
+    if (!streaming) return;
+    const element = scrollRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [streamedText, streaming]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -566,10 +572,14 @@ function MessageBubble({
             size="icon-sm"
             aria-label="Copy answer"
             onClick={async () => {
-              await navigator.clipboard.writeText(message.content);
-              setCopied(true);
-              toast.success("Copied to clipboard");
-              setTimeout(() => setCopied(false), 1500);
+              try {
+                await navigator.clipboard.writeText(message.content);
+                setCopied(true);
+                toast.success("Copied to clipboard");
+                setTimeout(() => setCopied(false), 1500);
+              } catch {
+                toast.error("Could not copy this answer. Please try again.");
+              }
             }}
           >
             {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
