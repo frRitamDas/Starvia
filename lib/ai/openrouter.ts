@@ -1,4 +1,4 @@
-import { serverEnv } from "@/lib/env";
+import { publicEnv, serverEnv } from "@/lib/env";
 import { AiError } from "@/lib/ai/types";
 import type { AiContent, GenerateOptions, GenerateResult, ModelAlias, StreamChunk, StreamResult } from "@/lib/ai/types";
 
@@ -77,7 +77,7 @@ async function request(options: GenerateOptions, stream: boolean) {
         Authorization: `Bearer ${serverEnv.openRouterApiKey}`,
         "Content-Type": "application/json",
         Accept: stream ? "text/event-stream" : "application/json",
-        "HTTP-Referer": serverEnv.siteUrl,
+        "HTTP-Referer": publicEnv.siteUrl,
         "X-Title": "Starvia",
       },
       body: JSON.stringify(requestBody(options, stream)),
