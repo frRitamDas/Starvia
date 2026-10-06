@@ -85,6 +85,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileTopBar
+          name={name}
+          email={context.user?.email ?? null}
+          avatarUrl={profile?.avatar_url ?? null}
+          plan={context.plan}
+          streak={streak}
+          xp={xp}
+          level={level.level}
+          levelProgress={level.progress}
           actions={
             <UserMenu
               name={name}
@@ -110,7 +118,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <main
           id="main"
-          className="min-w-0 flex-1 overflow-x-hidden px-4 pb-[var(--starvia-mobile-bottomnav)] pt-[var(--starvia-mobile-topbar)] sm:px-6 lg:pb-10 lg:pt-6"
+          className="min-w-0 flex-1 overflow-x-hidden px-4 pb-[calc(var(--starvia-mobile-bottomnav)+1rem)] pt-[calc(var(--starvia-mobile-topbar)+0.5rem)] sm:px-6 lg:pb-10 lg:pt-6"
         >
           <div className="mx-auto w-full max-w-6xl space-y-6">
             {isDemo ? <DemoBanner /> : null}
