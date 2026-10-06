@@ -20,14 +20,43 @@ interface SiteHeaderProps {
 export function SiteHeader({ signedIn = false }: SiteHeaderProps) {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
+  const [scrolled, setScrolled] = React.useState(false);
+  const [hash, setHash] = React.useState("");
 
   React.useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
+  React.useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    const onHashChange = () => setHash(window.location.hash);
+    onScroll();
+    onHashChange();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("hashchange", onHashChange);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("hashchange", onHashChange);
+    };
+  }, []);
+
+  const isActive = (href: string) => {
+    if (href.startsWith("/#")) {
+      return pathname === "/" && hash === href.slice(1);
+    }
+    return pathname === href || pathname.startsWith(href + "/");
+  };
+
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/75">
+      <header
+        className={cn(
+          "fixed inset-x-0 top-0 z-50 border-b pt-[env(safe-area-inset-top)] backdrop-blur-2xl transition-[background-color,box-shadow,border-color] duration-200 supports-[backdrop-filter]:bg-background/75",
+          scrolled
+            ? "border-border/80 bg-background/95 shadow-[0_8px_30px_-20px_hsl(var(--foreground)/.35)]"
+            : "border-border/60 bg-background/90",
+        )}
+      >
         <div className="container flex h-16 min-w-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <StarviaLogo />
@@ -39,11 +68,12 @@ export function SiteHeader({ signedIn = false }: SiteHeaderProps) {
 
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
             {siteConfig.nav.map((item) => {
-              const active = pathname === item.href;
+              const active = isActive(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "rounded-full px-3.5 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
                     active && "bg-accent text-foreground",
@@ -105,9 +135,10 @@ export function SiteHeader({ signedIn = false }: SiteHeaderProps) {
                       key={item.href}
                       href={item.href}
                       onClick={() => setOpen(false)}
+                      aria-current={isActive(item.href) ? "page" : undefined}
                       className={cn(
                         "rounded-2xl px-4 py-3.5 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                        pathname === item.href && "bg-accent text-foreground",
+                        isActive(item.href) && "bg-accent text-foreground",
                       )}
                     >
                       {item.title}
