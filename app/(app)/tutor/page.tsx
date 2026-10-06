@@ -52,6 +52,9 @@ export default async function TutorPage({
         board={context.profile.board ?? null}
         remaining={usage.usage.tutor.remaining}
         limit={usage.usage.tutor.limit}
+        streak={context.profile.streak_count ?? 0}
+        studyMinutes={context.profile.study_minutes ?? 0}
+        xp={context.profile.xp ?? 0}
         demo={context.demo}
       />
     </div>
