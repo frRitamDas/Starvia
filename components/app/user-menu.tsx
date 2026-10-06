@@ -43,7 +43,7 @@ export function UserMenu({
   const router = useRouter();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

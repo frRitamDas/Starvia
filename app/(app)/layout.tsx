@@ -108,7 +108,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           />
         </div>
 
-        <main id="main" className="min-w-0 flex-1 overflow-x-hidden px-4 pb-24 pt-5 sm:px-6 lg:pb-10 lg:pt-6">
+        <main
+          id="main"
+          className="min-w-0 flex-1 overflow-x-hidden px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-[calc(3.5rem+env(safe-area-inset-top))] sm:px-6 lg:pb-10 lg:pt-6"
+        >
           <div className="mx-auto w-full max-w-6xl space-y-6">
             {isDemo ? <DemoBanner /> : null}
             {children}

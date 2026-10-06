@@ -85,7 +85,7 @@ export function MobileTopBar({ actions }: { actions?: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <header className="glass sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b px-3 lg:hidden">
+    <header className="glass fixed inset-x-0 top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-end justify-between gap-2 border-b px-3 pb-0 pt-[env(safe-area-inset-top)] lg:hidden">
       <div className="flex items-center gap-2">
         <Sheet>
           <SheetTrigger asChild>
@@ -133,7 +133,7 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Quick navigation"
-      className="glass safe-bottom fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t px-1 pt-1 lg:hidden"
+      className="glass safe-bottom fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t px-1 pt-1 lg:hidden"
     >
       {items.map((item) => {
         const active = isActive(pathname, item.href);

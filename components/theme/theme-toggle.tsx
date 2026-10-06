@@ -21,7 +21,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   const { theme, resolvedTheme, setTheme } = useTheme();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className={className} aria-label="Change theme">
           {resolvedTheme === "dark" ? <Moon className="size-[18px]" /> : <Sun className="size-[18px]" />}

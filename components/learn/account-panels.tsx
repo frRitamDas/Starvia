@@ -18,6 +18,12 @@ export function AvatarUploader({ name, avatarUrl }: { name: string; avatarUrl: s
   const [preview, setPreview] = React.useState<string | null>(avatarUrl);
   const [pending, setPending] = React.useState(false);
 
+  React.useEffect(() => {
+    return () => {
+      if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
   async function upload(file: File) {
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image file.");
@@ -45,14 +51,19 @@ export function AvatarUploader({ name, avatarUrl }: { name: string; avatarUrl: s
         throw new Error(body?.error?.message ?? "Could not upload that image.");
       }
 
-      setPreview(body.data?.avatarUrl ?? localUrl);
+      const remoteUrl = body.data?.avatarUrl;
+      if (remoteUrl) {
+        URL.revokeObjectURL(localUrl);
+        setPreview(remoteUrl);
+      } else {
+        setPreview(localUrl);
+      }
       toast.success("Profile photo updated");
       router.refresh();
     } catch (error) {
       setPreview(avatarUrl);
       toast.error(error instanceof Error ? error.message : "Could not upload that image.");
     } finally {
-      URL.revokeObjectURL(localUrl);
       setPending(false);
     }
   }
