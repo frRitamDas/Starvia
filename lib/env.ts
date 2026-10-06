@@ -34,7 +34,7 @@ export const publicEnv = {
 export const serverEnv = {
   get aiProvider() {
     const provider = read("AI_PROVIDER", "nararouter").toLowerCase();
-    return provider === "nararouter" ? "nararouter" : "gemini";
+    return provider === "nararouter" || provider === "openrouter" ? provider : "gemini";
   },
   get naraRouterApiKey() {
     assertServer("naraRouterApiKey");
@@ -47,6 +47,18 @@ export const serverEnv = {
   get naraRouterModelDefault() {
     assertServer("naraRouterModelDefault");
     return read("NARAROUTER_MODEL_DEFAULT", "auto/bynara");
+  },
+  get openRouterApiKey() {
+    assertServer("openRouterApiKey");
+    return read("OPENROUTER_API_KEY");
+  },
+  get openRouterBaseUrl() {
+    assertServer("openRouterBaseUrl");
+    return read("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1");
+  },
+  get openRouterModelDefault() {
+    assertServer("openRouterModelDefault");
+    return read("OPENROUTER_MODEL_DEFAULT", "openrouter/free");
   },
   get geminiApiKey() {
     assertServer("geminiApiKey");
@@ -115,6 +127,7 @@ export const supabaseConfigured = () =>
 
 export const geminiConfigured = () => Boolean(serverEnv.geminiApiKey);
 export const naraRouterConfigured = () => Boolean(serverEnv.naraRouterApiKey);
+export const openRouterConfigured = () => Boolean(serverEnv.openRouterApiKey);
 
 export const razorpayConfigured = () =>
   Boolean(serverEnv.razorpayKeyId && serverEnv.razorpayKeySecret);
@@ -135,6 +148,7 @@ export function integrationStatus() {
     supabase: supabaseConfigured(),
     aiProvider: serverEnv.aiProvider,
     naraRouter: naraRouterConfigured(),
+    openRouter: openRouterConfigured(),
     gemini: geminiConfigured(),
     razorpay: razorpayConfigured(),
     razorpayWebhook: Boolean(serverEnv.razorpayWebhookSecret),

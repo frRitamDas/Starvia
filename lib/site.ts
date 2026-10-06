@@ -28,6 +28,7 @@ export const siteConfig = {
   url: publicEnv.siteUrl,
   nav: [
     { title: "Features", href: "/#tools" },
+    { title: "Past Papers", href: "/papers" },
     { title: "How it works", href: "/#how-it-works" },
     { title: "Pricing", href: "/#pricing" },
     { title: "FAQ", href: "/#faq" },
@@ -37,6 +38,7 @@ export const siteConfig = {
       { title: "AI Tutor", href: "/tutor" },
       { title: "Tutorials", href: "/tutorials" },
       { title: "Quizzes", href: "/quiz" },
+      { title: "Past Papers", href: "/papers" },
       { title: "Question Solver", href: "/solve" },
       { title: "Exam Prep", href: "/exam-prep" },
       { title: "Flashcards", href: "/flashcards" },
