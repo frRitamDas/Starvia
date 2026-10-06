@@ -85,7 +85,7 @@ export function MobileTopBar({ actions }: { actions?: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <header className="glass fixed inset-x-0 top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-end justify-between gap-2 border-b px-3 pb-0 pt-[env(safe-area-inset-top)] lg:hidden">
+    <header className="glass fixed inset-x-0 top-0 z-40 flex h-[var(--starvia-mobile-topbar)] items-end justify-between gap-2 border-b px-3 pb-0 pt-[env(safe-area-inset-top)] lg:hidden">
       <div className="flex items-center gap-2">
         <Sheet>
           <SheetTrigger asChild>
@@ -93,7 +93,7 @@ export function MobileTopBar({ actions }: { actions?: React.ReactNode }) {
               <Menu className="size-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[78%] max-w-[300px] p-4">
+          <SheetContent side="left" className="w-[min(82vw,320px)] max-w-[320px] p-4">
             <SheetHeader className="px-1">
               <SheetTitle>
                 <StarviaLogo href={null} />
@@ -133,7 +133,7 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Quick navigation"
-      className="glass safe-bottom fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t px-1 pt-1 lg:hidden"
+      className="glass safe-bottom fixed inset-x-0 bottom-0 z-40 flex min-h-[var(--starvia-mobile-bottomnav)] items-stretch justify-around border-t px-1 pt-1 lg:hidden"
     >
       {items.map((item) => {
         const active = isActive(pathname, item.href);
