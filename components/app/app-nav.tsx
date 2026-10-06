@@ -8,17 +8,25 @@ import {
   BookOpenCheck,
   CalendarClock,
   FileText,
+  CalendarCheck2,
   ClipboardList,
   LayoutDashboard,
   Layers,
   Menu,
   ScanLine,
+  Settings2,
   Sparkles,
+  UserRound,
 } from "lucide-react";
 
 import { StarviaLogo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import type { PlanId } from "@/lib/plans";
+import { initialsOf } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
@@ -81,44 +89,181 @@ export function AppSidebar({ footer }: { footer?: React.ReactNode }) {
   );
 }
 
-export function MobileTopBar({ actions }: { actions?: React.ReactNode }) {
+export function MobileTopBar({
+  name,
+  email,
+  avatarUrl,
+  plan,
+  streak,
+  xp,
+  level,
+  levelProgress,
+  actions,
+}: {
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+  plan: PlanId;
+  streak: number;
+  xp: number;
+  level: number;
+  levelProgress: number;
+  actions?: React.ReactNode;
+}) {
   const pathname = usePathname();
+  const [open, setOpen] = React.useState(false);
+  const [keyboardOpen, setKeyboardOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const update = () => {
+      setKeyboardOpen(viewport.height < window.innerHeight - 120);
+    };
+    update();
+    viewport.addEventListener("resize", update);
+    return () => viewport.removeEventListener("resize", update);
+  }, []);
+
+  React.useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const planLabel = plan === "free" ? "Starter · Free" : plan === "pro" ? "Pro" : "Ultra";
 
   return (
-    <header className="glass fixed inset-x-0 top-0 z-40 flex h-[var(--starvia-mobile-topbar)] items-end justify-between gap-2 border-b px-3 pb-0 pt-[env(safe-area-inset-top)] lg:hidden">
-      <div className="flex items-center gap-2">
-        <Sheet>
+    <header
+      data-mobile-topbar
+      className={cn(
+        "glass fixed inset-x-0 top-0 z-40 flex h-[var(--starvia-mobile-topbar)] items-center justify-between gap-2 border-b px-3 pt-[env(safe-area-inset-top)] transition-transform duration-200 lg:hidden",
+        keyboardOpen && "pointer-events-none -translate-y-full opacity-0",
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="Open navigation">
+            <Button variant="ghost" size="icon-sm" aria-label="Open Starvia menu">
               <Menu className="size-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[min(82vw,320px)] max-w-[320px] p-4">
-            <SheetHeader className="px-1">
-              <SheetTitle>
-                <StarviaLogo href={null} />
-              </SheetTitle>
+          <SheetContent
+            side="left"
+            className="flex w-[min(90vw,360px)] max-w-[360px] flex-col overflow-hidden border-border bg-card p-0"
+          >
+            <SheetHeader className="border-b border-border/70 px-5 pb-4 pt-12">
+              <div className="flex items-center gap-3">
+                <Avatar className="size-11">
+                  {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
+                  <AvatarFallback>{initialsOf(name) || "S"}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <SheetTitle className="truncate text-left text-base">{name}</SheetTitle>
+                  <p className="truncate text-xs text-muted-foreground">{email ?? "Student account"}</p>
+                  <Badge variant={plan === "free" ? "secondary" : "gradient"} className="mt-1.5">
+                    {planLabel}
+                  </Badge>
+                </div>
+              </div>
             </SheetHeader>
-            <nav aria-label="Study navigation" className="mt-4 space-y-1">
-              {NAV_ITEMS.map((item) => (
+
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+              <div className="rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Study status</p>
+                    <p className="mt-1 text-lg font-semibold">Level {level}</p>
+                  </div>
+                  <div className="rounded-full border border-border/70 bg-card px-2.5 py-1 text-xs font-medium">{xp} XP</div>
+                </div>
+                <Progress value={levelProgress} className="mt-3 h-1.5" />
+                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Daily streak</span>
+                  <span className="font-medium text-foreground">🔥 {streak} day{streak === 1 ? "" : "s"}</span>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Learn</p>
+                <nav aria-label="Study navigation" className="mt-2 space-y-1">
+                  {NAV_ITEMS.slice(0, 6).map((item) => {
+                    const active = isActive(pathname, item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
+                          active ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                        )}
+                      >
+                        <item.icon className="size-4" />
+                        {item.title}
+                        {active ? <span className="ml-auto size-1.5 rounded-full bg-primary" /> : null}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <div className="mt-5">
+                <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Practice</p>
+                <nav className="mt-2 space-y-1">
+                  {NAV_ITEMS.slice(6).map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
+                        isActive(pathname, item.href) ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                      )}
+                    >
+                      <item.icon className="size-4" />
+                      {item.title}
+                    </Link>
+                  ))}
+                </nav>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-2">
                 <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground",
-                    isActive(pathname, item.href) && "bg-accent/70 text-foreground",
-                  )}
+                  href="/profile"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl border border-border/70 bg-background p-3 text-xs font-medium"
                 >
-                  <item.icon className="size-4" />
-                  {item.title}
+                  <UserRound className="size-4 text-primary" />
+                  <span className="mt-2 block">My profile</span>
                 </Link>
-              ))}
-            </nav>
+                <Link
+                  href="/profile#settings"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl border border-border/70 bg-background p-3 text-xs font-medium"
+                >
+                  <Settings2 className="size-4 text-primary" />
+                  <span className="mt-2 block">Settings</span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="border-t border-border/70 bg-background/80 p-4 safe-bottom">
+              {plan === "free" ? (
+                <Button asChild variant="gradient" className="w-full" onClick={() => setOpen(false)}>
+                  <Link href="/upgrade"><Sparkles className="size-4" /> Upgrade plan</Link>
+                </Button>
+              ) : (
+                <Button asChild variant="outline" className="w-full" onClick={() => setOpen(false)}>
+                  <Link href="/upgrade"><CalendarCheck2 className="size-4" /> Manage plan</Link>
+                </Button>
+              )}
+            </div>
           </SheetContent>
         </Sheet>
-        <StarviaLogo showText markSize={26} textClassName="text-base" />
+        <StarviaLogo showText markSize={28} textClassName="text-base" />
       </div>
-      <div className="flex items-center gap-1">
+
+      <div className="flex shrink-0 items-center gap-1">
         {actions}
         <ThemeToggle />
       </div>
@@ -130,10 +275,26 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((item) => item.primary);
 
+  const [keyboardOpen, setKeyboardOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const update = () => setKeyboardOpen(viewport.height < window.innerHeight - 120);
+    update();
+    viewport.addEventListener("resize", update);
+    return () => viewport.removeEventListener("resize", update);
+  }, []);
+
   return (
     <nav
+      data-mobile-bottomnav
       aria-label="Quick navigation"
-      className="glass safe-bottom fixed inset-x-0 bottom-0 z-40 flex min-h-[var(--starvia-mobile-bottomnav)] items-stretch justify-around border-t px-1 pt-1 lg:hidden"
+      className={cn(
+        "glass safe-bottom fixed inset-x-0 bottom-0 z-40 flex min-h-[var(--starvia-mobile-bottomnav)] items-stretch justify-around border-t px-1 pt-1 transition-transform duration-200 lg:hidden",
+        keyboardOpen && "pointer-events-none translate-y-full opacity-0",
+      )}
     >
       {items.map((item) => {
         const active = isActive(pathname, item.href);
