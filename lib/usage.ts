@@ -60,20 +60,35 @@ async function callQuotaService(
     throw new ApiError("UNAUTHORIZED", "Your study session has expired. Please sign in again.");
   }
 
-  const response = await fetch(`${publicEnv.supabaseUrl}/functions/v1/starvia-quota`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      apikey: publicEnv.supabaseAnonKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ action, feature, limit, amount }),
-    cache: "no-store",
-  });
-
-  const payload = (await response.json().catch(() => null)) as
+  let response: Response;
+  let payload:
     | { data?: Record<string, unknown>; error?: string; code?: string }
-    | null;
+    | null = null;
+
+  try {
+    response = await fetch(`${publicEnv.supabaseUrl}/functions/v1/starvia-quota`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: publicEnv.supabaseAnonKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action, feature, limit, amount }),
+      cache: "no-store",
+    });
+
+    payload = (await response.json().catch(() => null)) as typeof payload;
+  } catch (error) {
+    console.error("[usage] quota service request failed:", {
+      action,
+      feature,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new ApiError(
+      "SERVER_ERROR",
+      "Study services are temporarily unavailable. Please try again.",
+    );
+  }
 
   if (!response.ok || !payload?.data) {
     console.error("[usage] quota service failed:", {
@@ -85,9 +100,7 @@ async function callQuotaService(
     });
     throw new ApiError(
       "SERVER_ERROR",
-      payload?.error === "Authentication required."
-        ? "Your study session has expired. Please sign in again."
-        : "Study services are temporarily unavailable. Please try again.",
+      "Study services are temporarily unavailable. Please try again.",
     );
   }
 
