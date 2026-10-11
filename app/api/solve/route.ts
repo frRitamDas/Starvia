@@ -25,7 +25,7 @@ Once configured, Starvia identifies the concept, explains it at your class level
 4. The final answer is highlighted.
 
 ## Final answer
-**Add GEMINI_API_KEY in your environment to get a real solution.**
+**Configure your AI provider in Vercel and redeploy to get a real solution.**
 
 ## Watch out for
 Skipping steps — board examiners award method marks.
