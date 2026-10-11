@@ -164,7 +164,7 @@ export async function POST(request: Request) {
               subject: studentContext.subject,
               topic: studentContext.topic,
             });
-            send({ type: "notice", message: "Running in demo mode — configure GEMINI_API_KEY for real answers." });
+            send({ type: "notice", message: "Running in demo mode — configure Starvia's AI provider for real answers." });
             for (const chunk of answer.match(/[\s\S]{1,140}/g) ?? []) {
               if (!send({ type: "delta", text: chunk })) break;
               await new Promise((resolve) => setTimeout(resolve, 12));
