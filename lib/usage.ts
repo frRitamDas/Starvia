@@ -78,7 +78,7 @@ async function callQuotaService(
     );
   }
 
-  const row = Array.isArray(data) ? data[0] : data;
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
   const valid = action === "consume"
     ? row && typeof row.allowed === "boolean" && Number.isFinite(row.used) && Number.isFinite(row.remaining)
     : row && Number.isFinite(row.refunded) && Number.isFinite(row.used) && Number.isFinite(row.remaining);
