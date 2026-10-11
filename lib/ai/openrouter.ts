@@ -23,8 +23,20 @@ interface ChatCompletionStreamChunk {
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
 }
 
+/**
+ * The OpenRouter free router can select specialist models (including content
+ * safety classifiers) that return labels instead of answers. Starvia needs a
+ * general-purpose instruction model for tutoring and structured study content.
+ * Keep an explicitly selected model, but replace the generic router with a
+ * known general-purpose free model.
+ */
+const DEFAULT_GENERAL_FREE_MODEL = "google/gemma-4-31b-it:free";
+
 function modelFor(_alias: ModelAlias) {
-  return serverEnv.openRouterModelDefault;
+  const configured = serverEnv.openRouterModelDefault;
+  return !configured || configured === "openrouter/free"
+    ? DEFAULT_GENERAL_FREE_MODEL
+    : configured;
 }
 
 function baseUrl() {
@@ -78,6 +90,9 @@ function requestBody(options: GenerateOptions, stream: boolean) {
     temperature: options.temperature ?? 0.6,
     max_tokens: options.maxOutputTokens ?? 4096,
     ...(options.topP !== undefined ? { top_p: options.topP } : {}),
+    ...(options.responseMimeType === "application/json"
+      ? { response_format: { type: "json_object" } }
+      : {}),
     stream,
   };
 }
