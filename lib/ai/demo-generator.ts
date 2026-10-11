@@ -5,7 +5,7 @@ import type { ExamPlanPayload, FlashcardPayload, QuizPayload, TutorialContentPay
  * Demo-mode content generator.
  *
  * This is ONLY used when `demoMode()` is true — i.e. the deployment has no
- * Supabase/Gemini keys and is explicitly running the clickable demo
+ * Supabase/OpenRouter keys and is explicitly running the clickable demo
  * (NEXT_PUBLIC_DEMO_MODE=true) or a local dev server without keys.
  *
  * Production never falls back to this: every AI route throws NOT_CONFIGURED
@@ -13,7 +13,7 @@ import type { ExamPlanPayload, FlashcardPayload, QuizPayload, TutorialContentPay
  */
 
 export const DEMO_NOTICE =
-  "Demo mode: this is placeholder study content. Add GEMINI_API_KEY to generate real AI answers.";
+  "Demo mode: this is placeholder study content. Configure an AI provider to generate real AI answers.";
 
 export function demoTutorAnswer(question: string, context: { classLevel?: string | null; subject?: string | null; topic?: string | null }) {
   const subject = context.subject ?? "this subject";
@@ -22,7 +22,7 @@ export function demoTutorAnswer(question: string, context: { classLevel?: string
 Starvia's AI is running in **demo mode** on this deployment, so I can't generate a real explanation for *"${question}"* yet.
 
 ## What to do
-1. Add \`GEMINI_API_KEY\` to your Vercel environment variables and redeploy.
+1. Add \`OPENROUTER_API_KEY\` to your Vercel environment variables and redeploy.
 2. Also set \`NEXT_PUBLIC_SUPABASE_URL\` and \`NEXT_PUBLIC_SUPABASE_ANON_KEY\` so your progress and conversations are stored.
 
 ## What will happen then
@@ -96,7 +96,7 @@ export function demoTutorial(input: {
         hint: "Start with the definition, then give one real-life example.",
       },
     ],
-    summary: `Demo summary: with a Gemini key configured, this section recaps ${input.topic} in 4–6 exam-ready sentences. ${DEMO_NOTICE}`,
+    summary: `Demo summary: with the AI provider configured, this section recaps ${input.topic} in 4–6 exam-ready sentences. ${DEMO_NOTICE}`,
   };
 }
 
@@ -113,7 +113,7 @@ export function demoQuiz(input: { subject: string; topic?: string | null; classL
         question: `Demo placeholder ${position}: Write one sentence defining ${topic}.`,
         options: null,
         correctAnswer: `${topic} is the concept covered in this chapter of Class ${input.classLevel} ${input.subject}.`,
-        explanation: "Demo explanations appear here once a Gemini key is configured.",
+        explanation: "Demo explanations appear here once the AI provider is configured.",
         topic,
         difficulty: "easy",
         marks: 1,
@@ -172,7 +172,7 @@ export function demoExamPlan(input: {
   const days = Math.max(1, Math.min(input.plannedDays, 30));
   return {
     title: `${input.subject} revision plan — Class ${input.classLevel} ${input.board} (demo)`,
-    overview: `Demo revision plan for the ${input.examType} exam. Add a Gemini API key to receive a plan tailored to high-weightage chapters, your weak topics and the exact number of days you have.`,
+    overview: `Demo revision plan for the ${input.examType} exam. Configure the AI provider to receive a plan tailored to high-weightage chapters, your weak topics and the exact number of days you have.`,
     totalStudyHours: days * 1.5,
     importantTopics: [
       { name: input.chapter ?? input.subject, why: "Frequently asked in board papers.", weightage: "high", estimatedMinutes: 90 },
