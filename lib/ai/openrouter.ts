@@ -203,6 +203,14 @@ export async function* streamTextOpenRouter(options: GenerateOptions): AsyncGene
   let totalTokens = 0;
   let model = modelFor(options.model ?? "default");
   let sawText = false;
+  let releasedInitialText = false;
+  let initialText = "";
+
+  // Never expose output that looks like a classifier label instead of an answer.
+  // Buffer the opening line so the provider layer can fall back before any text
+  // reaches the student.
+  const isSafetyLabel = (value: string) =>
+    /^\s*(?:user\s+)?safety\s*:\s*(?:safe|unsafe|allowed|blocked|low|medium|high)\s*\.?\s*$/i.test(value);
 
   while (true) {
     const { done, value } = await reader.read();
@@ -226,7 +234,34 @@ export async function* streamTextOpenRouter(options: GenerateOptions): AsyncGene
         const delta = parsed.choices?.[0]?.delta?.content ?? "";
         if (delta) {
           sawText = true;
-          yield { text: delta };
+          if (!releasedInitialText) {
+            initialText += delta;
+            const newline = initialText.indexOf("\n");
+            if (newline >= 0) {
+              const openingLine = initialText.slice(0, newline).trim();
+              if (isSafetyLabel(openingLine)) {
+                throw new AiError(
+                  "bad_response",
+                  "The selected AI model returned a classification label instead of a tutoring answer.",
+                );
+              }
+              releasedInitialText = true;
+              yield { text: initialText };
+              initialText = "";
+            } else if (initialText.length >= 160) {
+              if (isSafetyLabel(initialText.trim())) {
+                throw new AiError(
+                  "bad_response",
+                  "The selected AI model returned a classification label instead of a tutoring answer.",
+                );
+              }
+              releasedInitialText = true;
+              yield { text: initialText };
+              initialText = "";
+            }
+          } else {
+            yield { text: delta };
+          }
         }
         if (parsed.usage) {
           promptTokens = parsed.usage.prompt_tokens ?? promptTokens;
@@ -238,6 +273,16 @@ export async function* streamTextOpenRouter(options: GenerateOptions): AsyncGene
   }
 
   if (!sawText) throw new AiError("bad_response", "AI didn't return an answer. Please try again.");
+
+  if (!releasedInitialText && initialText) {
+    if (isSafetyLabel(initialText.trim())) {
+      throw new AiError(
+        "bad_response",
+        "The selected AI model returned a classification label instead of a tutoring answer.",
+      );
+    }
+    yield { text: initialText };
+  }
 
   return {
     model,
