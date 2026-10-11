@@ -3,7 +3,6 @@ import "server-only";
 import { ApiError } from "@/lib/http";
 import { demoStore, demoToday, demoUsageKey } from "@/lib/demo/store";
 import { AI_FEATURES, FEATURE_LABELS, type AiFeature } from "@/lib/plans";
-import { publicEnv } from "@/lib/env";
 import type { AiUsageSummary } from "@/lib/types";
 import type { SessionContext } from "@/lib/session";
 
@@ -54,35 +53,24 @@ async function callQuotaService(
     throw new ApiError("SERVER_ERROR", "Study services are not configured correctly. Please try again later.");
   }
 
-  const { data: sessionData } = await client.auth.getSession();
-  const accessToken = sessionData.session?.access_token;
-  if (!accessToken) {
-    throw new ApiError("UNAUTHORIZED", "Your study session has expired. Please sign in again.");
-  }
+  // Use the user's authenticated Supabase session directly. The database RPCs
+  // enforce auth.uid() ownership, derive the authoritative plan limit, and
+  // perform the update atomically. This removes the Edge Function as a
+  // single point of failure and never requires a service-role key here.
+  const rpcName = action === "consume" ? "consume_ai_quota" : "refund_ai_quota";
+  const { data, error } = await client.rpc(rpcName, {
+    p_user_id: context.user.id,
+    p_feature: feature,
+    p_limit: limit,
+    p_amount: amount,
+  });
 
-  let response: Response;
-  let payload:
-    | { data?: Record<string, unknown>; error?: string; code?: string }
-    | null = null;
-
-  try {
-    response = await fetch(`${publicEnv.supabaseUrl}/functions/v1/starvia-quota`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        apikey: publicEnv.supabaseAnonKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ action, feature, limit, amount }),
-      cache: "no-store",
-    });
-
-    payload = (await response.json().catch(() => null)) as typeof payload;
-  } catch (error) {
-    console.error("[usage] quota service request failed:", {
+  if (error) {
+    console.error("[usage] quota database RPC failed:", {
       action,
       feature,
-      error: error instanceof Error ? error.message : String(error),
+      code: error.code,
+      message: error.message,
     });
     throw new ApiError(
       "SERVER_ERROR",
@@ -90,21 +78,20 @@ async function callQuotaService(
     );
   }
 
-  if (!response.ok || !payload?.data) {
-    console.error("[usage] quota service failed:", {
-      action,
-      feature,
-      status: response.status,
-      code: payload?.code,
-      message: payload?.error,
-    });
+  const row = Array.isArray(data) ? data[0] : data;
+  const valid = action === "consume"
+    ? row && typeof row.allowed === "boolean" && Number.isFinite(row.used) && Number.isFinite(row.remaining)
+    : row && Number.isFinite(row.refunded) && Number.isFinite(row.used) && Number.isFinite(row.remaining);
+
+  if (!valid) {
+    console.error("[usage] quota database RPC returned an invalid result:", { action, feature });
     throw new ApiError(
       "SERVER_ERROR",
       "Study services are temporarily unavailable. Please try again.",
     );
   }
 
-  return payload.data;
+  return row as Record<string, unknown>;
 }
 
 /**
@@ -165,7 +152,8 @@ export async function consumeQuota(
   }
 
   const result = await callQuotaService(context, "consume", feature, limit, amount);
-  const row = result as { allowed: boolean; used: number; remaining: number };  if (!row.allowed) {
+  const row = result as { allowed: boolean; used: number; remaining: number };
+  if (!row.allowed) {
     throw new ApiError("LIMIT_REACHED", limitMessage(feature), {
       feature,
       used: row.used,
@@ -218,7 +206,8 @@ export async function refundQuota(
   }
 
   const result = await callQuotaService(context, "refund", feature, limit, amount);
-  const row = result as { refunded: number; used: number; remaining: number };  return {
+  const row = result as { refunded: number; used: number; remaining: number };
+  return {
     refunded: Math.max(0, row.refunded ?? 0),
     used: Math.max(0, row.used ?? 0),
     remaining: Math.max(0, row.remaining ?? 0),
